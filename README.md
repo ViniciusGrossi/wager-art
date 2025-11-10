@@ -1,73 +1,137 @@
-# Welcome to your Lovable project
+# WagerArt - Gestão Inteligente de Apostas Esportivas
 
-## Project info
+## 📊 Sobre o Projeto
 
-**URL**: https://lovable.dev/projects/c7b54679-24fd-43c0-8496-aa5e2aa7fcfa
+WagerArt é uma plataforma premium de gestão de apostas esportivas, desenvolvida com foco em experiência visual elegante e funcionalidades robustas. Conectado ao Supabase para persistência de dados, oferece análises detalhadas, controle de banca e insights para maximizar resultados.
 
-## How can I edit this code?
+## ✨ Principais Funcionalidades
 
-There are several ways of editing your application.
+### Dashboard
+- **KPIs em tempo real**: Total apostado, lucro, ROI, taxa de acerto
+- **Visualizações por categoria**: Análises gerais, por casa e por tipo de aposta
+- **Cards animados** com microinterações premium
 
-**Use Lovable**
+### Apostas
+- Gerenciamento completo do ciclo de apostas
+- Filtros avançados (período, casa, tipo, status)
+- Formulário inteligente com preview de retorno
+- Suporte a apostas com bônus e turbo
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c7b54679-24fd-43c0-8496-aa5e2aa7fcfa) and start prompting.
+### Resultados
+- Conciliação rápida de apostas pendentes
+- Sistema de cashout com preview de impacto
+- Histórico detalhado de todas as operações
 
-Changes made via Lovable will be committed automatically to this repo.
+### Análises
+- Gráficos elegantes de ROI e lucro
+- Análise de sequências (streaks)
+- Evolução de odds e momentum
+- Taxa de acerto por período
 
-**Use your preferred IDE**
+### Banca
+- Visão consolidada de todas as casas
+- Controle de saldo em tempo real
+- Histórico de transações
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Stack Tecnológica
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React 18 + TypeScript
+- **Estilo**: Tailwind CSS + shadcn/ui (Radix UI)
+- **Animações**: Framer Motion
+- **Gráficos**: Recharts
+- **Tabelas**: TanStack Table
+- **Formulários**: react-hook-form + zod
+- **Backend**: Supabase
+- **Estado**: Zustand
+- **Datas**: dayjs
 
-Follow these steps:
+## 🎨 Design System
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Cores
+- **Primary**: Verde/Emerald (#22c55e) - Ganhos e CTAs
+- **Destructive**: Vermelho/Rose - Perdas e erros
+- **Success**: Verde - Confirmações positivas
+- **Warning**: Amarelo - Alertas e pendências
+- **Muted**: Cinza - Elementos secundários
+
+### Componentes
+- Cards com efeito glass e hover lift
+- Badges coloridas por status
+- Animações suaves de entrada
+- Skeletons para carregamento
+- Toasts para feedback
+
+## 🚀 Como Usar
+
+### Instalação
+
+```bash
+# Clone o repositório
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Instale as dependências
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Configure as variáveis de ambiente
+# Adicione ao .env:
+# VITE_SUPABASE_URL=your_url
+# VITE_SUPABASE_ANON_KEY=your_key
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Estrutura de Dados
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+O projeto utiliza duas tabelas principais no Supabase:
 
-**Use GitHub Codespaces**
+**aposta**
+- Campos: id, categoria, tipo_aposta, casa_de_apostas, valor_apostado, odd, valor_final, bonus, turbo, resultado, detalhes, partida, torneio, data
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**bookies**
+- Campos: id, name, balance, last_deposit, last_withdraw, last_update, created_at
 
-## What technologies are used for this project?
+### Regras de Negócio
 
-This project is built with:
+#### Nova Aposta
+- Valida saldo disponível (exceto para bônus)
+- Debita stake da casa (apostas normais)
+- Status inicial: Pendente
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+#### Resultados
+- **Ganhou**: Credita stake + lucro (normal) ou só lucro (bônus)
+- **Perdeu**: Mantém débito do stake (normal) ou sem impacto (bônus)
+- **Cancelado**: Devolve stake (normal)
+- **Cashout**: Credita valor do cashout
 
-## How can I deploy this project?
+## 📱 Páginas
 
-Simply open [Lovable](https://lovable.dev/projects/c7b54679-24fd-43c0-8496-aa5e2aa7fcfa) and click on Share -> Publish.
+- `/` - Dashboard com visão geral
+- `/apostas` - Gestão de apostas
+- `/resultados` - Conciliação de resultados
+- `/analises` - Estatísticas e gráficos
+- `/banca` - Controle de casas de apostas
 
-## Can I connect a custom domain to my Lovable project?
+## 🎯 Próximos Passos
 
-Yes, you can!
+- [ ] Implementar tabelas com TanStack Table
+- [ ] Adicionar gráficos interativos com Recharts
+- [ ] Criar sistema de notificações
+- [ ] Implementar exportação de dados
+- [ ] Adicionar suporte a múltiplas moedas
+- [ ] Desenvolver sistema de metas e limites
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📄 Licença
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Este projeto está sob a licença MIT.
+
+## 🔗 Links Úteis
+
+- [Documentação Lovable](https://docs.lovable.dev/)
+- [Supabase Docs](https://supabase.com/docs)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Framer Motion](https://www.framer.com/motion/)
+
+---
+
+**URL do Projeto**: https://lovable.dev/projects/c7b54679-24fd-43c0-8496-aa5e2aa7fcfa

@@ -1,0 +1,187 @@
+import { supabase } from "@/integrations/supabase/client";
+import type { Aposta, ApostaFormData, KPIData, SeriesData, ResultadoType } from "@/types/betting";
+import dayjs from "dayjs";
+
+export interface ListParams {
+  startDate?: string;
+  endDate?: string;
+  casa?: string;
+  tipo?: string;
+  resultado?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export const apostasService = {
+  async list(params: ListParams = {}) {
+    let query = supabase
+      .from("aposta")
+      .select("*", { count: "exact" })
+      .order("data", { ascending: false });
+
+    if (params.startDate) {
+      query = query.gte("data", params.startDate);
+    }
+    if (params.endDate) {
+      query = query.lte("data", params.endDate);
+    }
+    if (params.casa) {
+      query = query.eq("casa_de_apostas", params.casa);
+    }
+    if (params.tipo) {
+      query = query.eq("tipo_aposta", params.tipo);
+    }
+    if (params.resultado) {
+      query = query.eq("resultado", params.resultado);
+    }
+    if (params.search) {
+      query = query.or(`partida.ilike.%${params.search}%,detalhes.ilike.%${params.search}%`);
+    }
+    if (params.limit) {
+      query = query.limit(params.limit);
+    }
+    if (params.offset) {
+      query = query.range(params.offset, params.offset + (params.limit || 10) - 1);
+    }
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+    return { data: data as Aposta[], count: count || 0 };
+  },
+
+  async create(dto: ApostaFormData, bookieBalance: number) {
+    // Validar saldo se não for bônus
+    if (!dto.bonus && bookieBalance < dto.valor_apostado) {
+      throw new Error("Saldo insuficiente na casa de apostas");
+    }
+
+    // Inserir aposta
+    const { data: aposta, error: apostaError } = await supabase
+      .from("aposta")
+      .insert({
+        ...dto,
+        resultado: "Pendente",
+        valor_final: 0,
+      })
+      .select()
+      .single();
+
+    if (apostaError) throw apostaError;
+
+    // Debitar saldo se não for bônus
+    if (!dto.bonus) {
+      const { error: balanceError } = await supabase
+        .from("bookies")
+        .update({ 
+          balance: bookieBalance - dto.valor_apostado,
+          last_update: new Date().toISOString()
+        })
+        .eq("name", dto.casa_de_apostas);
+
+      if (balanceError) throw balanceError;
+    }
+
+    return aposta as Aposta;
+  },
+
+  async setResult(
+    id: number,
+    resultado: ResultadoType,
+    apostaData: Aposta,
+    cashoutValue?: number
+  ) {
+    let valor_final = 0;
+    let updateBalance = 0;
+
+    if (resultado === "Ganhou") {
+      const lucro = (apostaData.valor_apostado || 0) * ((apostaData.odd || 1) - 1);
+      valor_final = lucro;
+      updateBalance = apostaData.bonus ? lucro : (apostaData.valor_apostado || 0) + lucro;
+    } else if (resultado === "Perdeu") {
+      valor_final = apostaData.bonus ? 0 : -(apostaData.valor_apostado || 0);
+      updateBalance = 0;
+    } else if (resultado === "Cancelado") {
+      valor_final = 0;
+      updateBalance = apostaData.bonus ? 0 : (apostaData.valor_apostado || 0);
+    } else if (resultado === "Cashout" && cashoutValue) {
+      valor_final = cashoutValue - (apostaData.valor_apostado || 0);
+      updateBalance = cashoutValue;
+    }
+
+    // Atualizar aposta
+    const { error: apostaError } = await supabase
+      .from("aposta")
+      .update({ resultado, valor_final })
+      .eq("id", id);
+
+    if (apostaError) throw apostaError;
+
+    // Atualizar saldo se necessário
+    if (updateBalance > 0 && apostaData.casa_de_apostas) {
+      const { data: bookie } = await supabase
+        .from("bookies")
+        .select("balance")
+        .eq("name", apostaData.casa_de_apostas)
+        .single();
+
+      if (bookie) {
+        await supabase
+          .from("bookies")
+          .update({ 
+            balance: (bookie.balance || 0) + updateBalance,
+            last_update: new Date().toISOString()
+          })
+          .eq("name", apostaData.casa_de_apostas);
+      }
+    }
+  },
+
+  async kpis(params: ListParams = {}): Promise<KPIData> {
+    const { data } = await this.list(params);
+
+    const resolvidas = data.filter((a) => 
+      a.resultado && ["Ganhou", "Perdeu", "Cancelado", "Cashout"].includes(a.resultado)
+    );
+
+    const totalApostado = data.reduce((sum, a) => sum + (a.valor_apostado || 0), 0);
+    const lucro = resolvidas.reduce((sum, a) => sum + (a.valor_final || 0), 0);
+    const ganhas = resolvidas.filter((a) => a.resultado === "Ganhou").length;
+    const taxaAcerto = resolvidas.length > 0 ? (ganhas / resolvidas.length) * 100 : 0;
+    const roi = totalApostado > 0 ? (lucro / totalApostado) * 100 : 0;
+
+    return {
+      totalApostado,
+      lucro,
+      roi,
+      taxaAcerto,
+      totalApostas: data.length,
+      apostasPendentes: data.filter((a) => a.resultado === "Pendente").length,
+    };
+  },
+
+  async series(params: ListParams = {}): Promise<SeriesData[]> {
+    const { data } = await this.list(params);
+
+    const byDate = data.reduce((acc, aposta) => {
+      if (!aposta.data) return acc;
+      const date = dayjs(aposta.data).format("YYYY-MM-DD");
+      if (!acc[date]) {
+        acc[date] = { lucro: 0, apostas: 0 };
+      }
+      if (aposta.resultado && ["Ganhou", "Perdeu", "Cancelado", "Cashout"].includes(aposta.resultado)) {
+        acc[date].lucro += aposta.valor_final || 0;
+      }
+      acc[date].apostas += 1;
+      return acc;
+    }, {} as Record<string, { lucro: number; apostas: number }>);
+
+    return Object.entries(byDate)
+      .map(([date, stats]) => ({
+        date,
+        lucro: (stats as { lucro: number; apostas: number }).lucro,
+        apostas: (stats as { lucro: number; apostas: number }).apostas,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  },
+};
