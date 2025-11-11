@@ -42,13 +42,71 @@ interface CreateApostaDialogProps {
   onSuccess: () => void;
 }
 
-const categorias = ["Futebol", "Basquete", "Tênis", "Vôlei", "E-Sports", "Outros"];
-const tiposAposta = ["Simples", "Múltipla", "Sistema", "Live"];
+const categorias = [
+  "Resultado",
+  "Finalizacoes", 
+  "Escanteios",
+  "HT",
+  "FT",
+  "Gols",
+  "Chance Dupla",
+  "Chutes ao Gol",
+  "Ambas Marcam",
+  "Faltas",
+  "Cartoes",
+  "Defesas",
+  "Tiros livres",
+  "Tiros de Meta",
+  "Laterais",
+  "Desarmes",
+  "Impedimentos",
+  "Handicap",
+  "Outros"
+];
+
+const tiposAposta = ["Simples", "Dupla", "Tripla", "Múltipla", "Super Odd"];
+
+const torneios = [
+  "Brasileirao Serie A",
+  "Brasileirao Serie B",
+  "Champions League",
+  "Europa League",
+  "Conference League",
+  "Premier League",
+  "La Liga",
+  "Bundesliga",
+  "Serie A Italia",
+  "Ligue 1",
+  "Copa do Brasil",
+  "Copa Libertadores",
+  "Copa Sul-Americana",
+  "Liga Portugal",
+  "Campeonatos Estaduais",
+  "Data Fifa",
+  "Championship",
+  "FA Cup",
+  "Carabao Cup",
+  "Copa do Rei",
+  "Copa da Alemanha",
+  "Coppa Italia",
+  "Copa da França",
+  "Saudi Pro League",
+  "Süper Lig (Turquia)"
+];
+
+const turboOptions = [
+  { label: "Sem Turbo", value: 0 },
+  { label: "+25%", value: 0.25 },
+  { label: "+30%", value: 0.30 },
+  { label: "+50%", value: 0.50 },
+];
 
 export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApostaDialogProps) {
   const [bookies, setBookies] = useState<Bookie[]>([]);
   const [selectedBookie, setSelectedBookie] = useState<Bookie | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasBonus, setHasBonus] = useState(false);
+  const [selectedTurbo, setSelectedTurbo] = useState(0);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -56,8 +114,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
       categoria: "",
       tipo_aposta: "",
       casa_de_apostas: "",
-      valor_apostado: 0,
-      odd: 1.01,
+      valor_apostado: undefined as any,
+      odd: undefined as any,
       bonus: 0,
       turbo: 0,
       detalhes: "",
@@ -67,11 +125,13 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
   });
 
   const valorApostado = form.watch("valor_apostado") || 0;
-  const odd = form.watch("odd") || 1;
+  const odd = form.watch("odd") || 0;
   const bonus = form.watch("bonus") || 0;
-  const turbo = form.watch("turbo") || 0;
+  const turbo = selectedTurbo;
 
-  const retornoPotencial = valorApostado * odd + bonus + turbo;
+  const retornoBase = valorApostado * odd;
+  const turboValue = retornoBase * turbo;
+  const retornoPotencial = retornoBase + (hasBonus ? bonus : 0) + turboValue;
   const lucroPotencial = retornoPotencial - valorApostado;
 
   useEffect(() => {
@@ -79,6 +139,10 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
       loadBookies();
     }
   }, [open]);
+
+  useEffect(() => {
+    form.setValue("turbo", turboValue);
+  }, [turboValue]);
 
   const loadBookies = async () => {
     try {
@@ -112,8 +176,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
         casa_de_apostas: data.casa_de_apostas,
         valor_apostado: data.valor_apostado,
         odd: data.odd,
-        bonus: data.bonus,
-        turbo: data.turbo,
+        bonus: hasBonus ? data.bonus : 0,
+        turbo: turboValue,
         detalhes: data.detalhes,
         partida: data.partida,
         torneio: data.torneio,
@@ -124,6 +188,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
 
       toast({ title: "Sucesso!", description: "Aposta criada com sucesso" });
       form.reset();
+      setHasBonus(false);
+      setSelectedTurbo(0);
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -145,14 +211,14 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Preview do Retorno Potencial */}
+            {/* Preview do Retorno Potencial - Fixo no topo */}
             <AnimatePresence>
               {valorApostado > 0 && odd > 1 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20"
+                  className="sticky top-0 z-10 bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20 shadow-lg"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Retorno Potencial</span>
@@ -161,9 +227,31 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                   <div className="text-3xl font-bold text-primary mb-1">
                     {formatCurrency(retornoPotencial)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    Lucro: <span className="text-foreground font-semibold">{formatCurrency(lucroPotencial)}</span>
-                    {" • "}ROI: <span className="text-foreground font-semibold">{((lucroPotencial / valorApostado) * 100).toFixed(2)}%</span>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                      <span>Retorno base:</span>
+                      <span className="text-foreground font-semibold">{formatCurrency(retornoBase)}</span>
+                    </div>
+                    {hasBonus && bonus > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>+ Bônus:</span>
+                        <span className="font-semibold">{formatCurrency(bonus)}</span>
+                      </div>
+                    )}
+                    {turboValue > 0 && (
+                      <div className="flex justify-between text-blue-600">
+                        <span>+ Turbo ({(turbo * 100).toFixed(0)}%):</span>
+                        <span className="font-semibold">{formatCurrency(turboValue)}</span>
+                      </div>
+                    )}
+                    <div className="pt-2 border-t flex justify-between">
+                      <span>Lucro:</span>
+                      <span className="text-foreground font-bold">{formatCurrency(lucroPotencial)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ROI:</span>
+                      <span className="text-foreground font-bold">{((lucroPotencial / valorApostado) * 100).toFixed(2)}%</span>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -278,9 +366,10 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="0.00"
+                        placeholder="Digite o valor"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -298,9 +387,10 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="1.00"
+                        placeholder="Digite a odd"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -309,52 +399,70 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
               />
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="bonus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Gift className="h-4 w-4" />
-                      Bônus (R$)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Bônus Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <FormLabel className="flex items-center gap-2">
+                  <Gift className="h-4 w-4" />
+                  Bônus
+                </FormLabel>
+                <Button
+                  type="button"
+                  variant={hasBonus ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setHasBonus(!hasBonus)}
+                  className="transition-all"
+                >
+                  {hasBonus ? "Ativado" : "Desativado"}
+                </Button>
+              </div>
+              
+              {hasBonus && (
+                <FormField
+                  control={form.control}
+                  name="bonus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Valor do bônus"
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
-              <FormField
-                control={form.control}
-                name="turbo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Turbo (R$)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Turbo Buttons */}
+            <div className="space-y-3">
+              <FormLabel className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Turbo
+              </FormLabel>
+              <div className="grid grid-cols-4 gap-2">
+                {turboOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedTurbo === option.value ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setSelectedTurbo(option.value)}
+                    className={cn(
+                      "transition-all font-semibold",
+                      selectedTurbo === option.value && "ring-2 ring-primary ring-offset-2"
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -378,9 +486,20 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Torneio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Brasileirão Série A" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o torneio" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {torneios.map((torneio) => (
+                          <SelectItem key={torneio} value={torneio}>
+                            {torneio}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
