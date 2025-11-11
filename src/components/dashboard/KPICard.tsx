@@ -10,9 +10,10 @@ interface KPICardProps {
   trend?: number;
   isLoading?: boolean;
   delay?: number;
+  subtitle?: string;
 }
 
-export function KPICard({ title, value, icon: Icon, trend, isLoading, delay = 0 }: KPICardProps) {
+export function KPICard({ title, value, icon: Icon, trend, isLoading, delay = 0, subtitle }: KPICardProps) {
   if (isLoading) {
     return (
       <Card>
@@ -58,6 +59,9 @@ export function KPICard({ title, value, icon: Icon, trend, isLoading, delay = 0 
                 <span>{trend >= 0 ? "↑" : "↓"}</span>
                 <span>{Math.abs(trend).toFixed(1)}%</span>
               </p>
+            )}
+            {subtitle && (
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
             )}
           </div>
         </CardContent>

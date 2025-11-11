@@ -1,24 +1,29 @@
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { apostasService } from "@/services/apostas";
-import { useFilterStore } from "@/store/useFilterStore";
 import { ApostasTable } from "@/components/apostas/ApostasTable";
-import type { Aposta } from "@/types/betting";
+import { CreateApostaDialog } from "@/components/apostas/CreateApostaDialog";
+import { ApostasFilters } from "@/components/apostas/ApostasFilters";
+import { ApostasStats } from "@/components/apostas/ApostasStats";
+import type { Aposta, ResultadoType } from "@/types/betting";
 
 export default function Apostas() {
   const [apostas, setApostas] = useState<Aposta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { startDate, endDate, casa, tipo, resultado } = useFilterStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<ResultadoType | "Todos">("Todos");
+  const [selectedCasa, setSelectedCasa] = useState<string>("Todas");
 
   useEffect(() => {
     loadApostas();
-  }, [startDate, endDate, casa, tipo, resultado]);
+  }, []);
 
   const loadApostas = async () => {
     setIsLoading(true);
     try {
-      const { data } = await apostasService.list({ startDate, endDate, casa, tipo, resultado });
+      const { data } = await apostasService.list({});
       setApostas(data);
     } catch (error) {
       console.error("Erro ao carregar apostas:", error);
@@ -27,68 +32,55 @@ export default function Apostas() {
     }
   };
 
-  const filterByStatus = (status?: string) => {
-    if (!status) return apostas;
-    return apostas.filter((a) => a.resultado === status);
-  };
+  const casasDisponiveis = useMemo(() => {
+    const casas = new Set(apostas.map((a) => a.casa_de_apostas).filter(Boolean));
+    return Array.from(casas) as string[];
+  }, [apostas]);
+
+  const apostasFiltradas = useMemo(() => {
+    return apostas.filter((aposta) => {
+      const matchStatus = selectedStatus === "Todos" || aposta.resultado === selectedStatus;
+      const matchCasa = selectedCasa === "Todas" || aposta.casa_de_apostas === selectedCasa;
+      return matchStatus && matchCasa;
+    });
+  }, [apostas, selectedStatus, selectedCasa]);
 
   return (
     <div className="space-y-6">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex items-center justify-between flex-wrap gap-4"
       >
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Apostas</h1>
-          <p className="text-muted-foreground mt-1">Gerencie suas apostas</p>
+          <p className="text-muted-foreground mt-1">Gerencie todas as suas apostas</p>
         </div>
+        <Button onClick={() => setDialogOpen(true)} size="lg" className="gap-2">
+          <Plus className="h-5 w-5" />
+          Nova Aposta
+        </Button>
       </motion.div>
 
-      <Tabs defaultValue="todas" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="todas">Todas ({apostas.length})</TabsTrigger>
-          <TabsTrigger value="pendentes">
-            Pendentes ({filterByStatus("Pendente").length})
-          </TabsTrigger>
-          <TabsTrigger value="ganhos">
-            Ganhos ({filterByStatus("Ganhou").length})
-          </TabsTrigger>
-          <TabsTrigger value="perdidos">
-            Perdidos ({filterByStatus("Perdeu").length})
-          </TabsTrigger>
-          <TabsTrigger value="canceladas">
-            Canceladas ({filterByStatus("Cancelado").length})
-          </TabsTrigger>
-          <TabsTrigger value="cashout">
-            Cashout ({filterByStatus("Cashout").length})
-          </TabsTrigger>
-        </TabsList>
+      <ApostasStats apostas={apostas} />
 
-        <TabsContent value="todas">
-          <ApostasTable data={apostas} isLoading={isLoading} />
-        </TabsContent>
+      <div className="space-y-4">
+        <ApostasFilters
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          selectedCasa={selectedCasa}
+          onCasaChange={setSelectedCasa}
+          casasDisponiveis={casasDisponiveis}
+        />
 
-        <TabsContent value="pendentes">
-          <ApostasTable data={filterByStatus("Pendente")} isLoading={isLoading} />
-        </TabsContent>
+        <ApostasTable data={apostasFiltradas} isLoading={isLoading} />
+      </div>
 
-        <TabsContent value="ganhos">
-          <ApostasTable data={filterByStatus("Ganhou")} isLoading={isLoading} />
-        </TabsContent>
-
-        <TabsContent value="perdidos">
-          <ApostasTable data={filterByStatus("Perdeu")} isLoading={isLoading} />
-        </TabsContent>
-
-        <TabsContent value="canceladas">
-          <ApostasTable data={filterByStatus("Cancelado")} isLoading={isLoading} />
-        </TabsContent>
-
-        <TabsContent value="cashout">
-          <ApostasTable data={filterByStatus("Cashout")} isLoading={isLoading} />
-        </TabsContent>
-      </Tabs>
+      <CreateApostaDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={loadApostas}
+      />
     </div>
   );
 }

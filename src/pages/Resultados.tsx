@@ -1,52 +1,52 @@
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { apostasService } from "@/services/apostas";
 import { ResultadoCard } from "@/components/resultados/ResultadoCard";
+import { ResultadosKPIs } from "@/components/resultados/ResultadosKPIs";
+import { ApostasTable } from "@/components/apostas/ApostasTable";
 import type { Aposta, ResultadoType } from "@/types/betting";
 import { toast } from "sonner";
-import { ApostasTable } from "@/components/apostas/ApostasTable";
 
 export default function Resultados() {
-  const [pendentes, setPendentes] = useState<Aposta[]>([]);
-  const [historico, setHistorico] = useState<Aposta[]>([]);
+  const [apostas, setApostas] = useState<Aposta[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
+    loadApostas();
   }, []);
 
-  const loadData = async () => {
+  const loadApostas = async () => {
     setIsLoading(true);
     try {
-      const [pendentesData, historicoData] = await Promise.all([
-        apostasService.list({ resultado: "Pendente" }),
-        apostasService.list({}),
-      ]);
-      
-      setPendentes(pendentesData.data);
-      setHistorico(
-        historicoData.data.filter((a) =>
-          ["Ganhou", "Perdeu", "Cancelado", "Cashout"].includes(a.resultado || "")
-        )
-      );
+      const { data } = await apostasService.list({});
+      setApostas(data);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("Erro ao carregar apostas:", error);
       toast.error("Erro ao carregar apostas");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const apostasPendentes = useMemo(
+    () => apostas.filter((aposta) => aposta.resultado === "Pendente"),
+    [apostas]
+  );
+
+  const apostasFinalizadas = useMemo(
+    () => apostas.filter((aposta) => aposta.resultado && aposta.resultado !== "Pendente"),
+    [apostas]
+  );
+
   const handleSetResult = async (id: number, resultado: ResultadoType, cashoutValue?: number) => {
     try {
-      const aposta = [...pendentes, ...historico].find((a) => a.id === id);
+      const aposta = apostas.find((a) => a.id === id);
       if (!aposta) throw new Error("Aposta não encontrada");
 
       await apostasService.setResult(id, resultado, aposta, cashoutValue);
       
       toast.success(`Resultado marcado como ${resultado}`);
-      await loadData();
+      await loadApostas();
     } catch (error) {
       console.error("Erro ao definir resultado:", error);
       toast.error("Erro ao definir resultado");
@@ -58,30 +58,28 @@ export default function Resultados() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex items-center justify-between mb-6"
       >
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Resultados</h1>
-          <p className="text-muted-foreground mt-1">Registre os resultados das apostas</p>
+          <p className="text-muted-foreground mt-1">Confirme os resultados das apostas pendentes</p>
         </div>
       </motion.div>
 
-      <Tabs defaultValue="pendentes" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="pendentes">Pendentes ({pendentes.length})</TabsTrigger>
-          <TabsTrigger value="historico">Histórico ({historico.length})</TabsTrigger>
-        </TabsList>
+      <ResultadosKPIs apostas={apostas} isLoading={isLoading} />
 
-        <TabsContent value="pendentes">
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Apostas Pendentes</h2>
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-64 bg-muted/50 animate-pulse rounded-xl" />
               ))}
             </div>
-          ) : pendentes.length > 0 ? (
+          ) : apostasPendentes.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pendentes.map((aposta) => (
+              {apostasPendentes.map((aposta) => (
                 <ResultadoCard
                   key={aposta.id}
                   aposta={aposta}
@@ -94,12 +92,13 @@ export default function Resultados() {
               Nenhuma aposta pendente
             </div>
           )}
-        </TabsContent>
+        </div>
 
-        <TabsContent value="historico">
-          <ApostasTable data={historico} isLoading={isLoading} />
-        </TabsContent>
-      </Tabs>
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Histórico de Resultados</h2>
+          <ApostasTable data={apostasFinalizadas} isLoading={isLoading} />
+        </div>
+      </div>
     </div>
   );
 }
