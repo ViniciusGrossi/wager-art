@@ -191,6 +191,26 @@ export default function Analises() {
     return [];
   }, [activeTab, apostas, performanceByHouse, byCategoria, oddSeries, oddAnalysis, series]);
 
+  // Executive insights derived from current data (used in the summary card)
+  const executiveInsights = useMemo(() => {
+    const totalApostado = apostas.reduce((s, a) => s + (a.valor_apostado || 0), 0);
+    const resolvidas = apostas.filter((a) => a.resultado && ["Ganhou", "Perdeu", "Cancelado", "Cashout"].includes(a.resultado));
+    const lucro = resolvidas.reduce((s, a) => s + (a.valor_final || 0), 0);
+    const taxaAcerto = resolvidas.length ? (resolvidas.filter((r) => r.resultado === "Ganhou").length / resolvidas.length) * 100 : 0;
+    const topCasa = performanceByHouse[0]?.casa || performanceByHouse[0]?.name || "-";
+    const topCategoria = byCategoria[0]?.name || "-";
+    const maxDraw = riskMetrics?.maxDrawdown || 0;
+
+    return [
+      { type: "success", text: `Lucro líquido: ${formatCurrency(lucro)} sobre ${formatCurrency(totalApostado)} apostados` },
+      { type: "success", text: `Taxa de acerto: ${formatPercentage(taxaAcerto)}` },
+      { type: "success", text: `Melhor casa (ROI): ${topCasa}` },
+      { type: "warning", text: `Top categoria analisada: ${topCategoria}` },
+      { type: "error", text: `Max Drawdown: ${formatCurrency(maxDraw)}` },
+      { type: "warning", text: `Casas analisadas: ${performanceByHouse.length}` },
+    ];
+  }, [apostas, performanceByHouse, byCategoria, riskMetrics]);
+
   useEffect(() => {
     loadData();
   }, [startDate, endDate, casa, tipo]);
