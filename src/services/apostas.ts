@@ -184,4 +184,25 @@ export const apostasService = {
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
   },
+  
+  async update(id: number, dto: Partial<ApostaFormData>) {
+    const { data, error } = await supabase
+      .from("aposta")
+      .update(dto)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Aposta;
+  },
+
+  async remove(id: number) {
+    const { error } = await supabase
+      .from("aposta")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+  },
 };
