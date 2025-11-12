@@ -193,7 +193,14 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      toast({ title: "Erro", description: "Erro ao criar aposta", variant: "destructive" });
+      // Log detalhado para facilitar diagnóstico em desenvolvimento
+      // e apresentar a mensagem de erro ao usuário quando disponível.
+      // Algumas respostas do Supabase retornam um objeto com `message`.
+      // Mostramos isso no toast e no console para rastrear o problema.
+      // eslint-disable-next-line no-console
+      console.error("Erro ao criar aposta:", error);
+      const errMsg = (error as any)?.message || (typeof error === "string" ? error : JSON.stringify(error)) || "Erro ao criar aposta";
+      toast({ title: "Erro", description: errMsg, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
