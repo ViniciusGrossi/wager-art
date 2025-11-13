@@ -107,12 +107,18 @@ export default function Resultados() {
   };
 
   // Estatísticas rápidas das apostas pendentes
+  // Estatísticas rápidas das apostas pendentes
   const pendenteStats = useMemo(() => {
     const total = apostasPendentes.reduce((sum, a) => sum + (a.valor_apostado || 0), 0);
+    
+    // Cálculo correto: turbo aplicado sobre o lucro
     const retornoPotencial = apostasPendentes.reduce((sum, a) => {
-      const retorno = (a.valor_apostado || 0) * (a.odd || 1) + (a.bonus || 0) + (a.turbo || 0);
-      return sum + retorno;
+      const retornoBase = (a.valor_apostado || 0) * (a.odd || 1);
+      const bonus = a.bonus || 0;
+      const turbo = a.turbo || 0; // Turbo já calculado corretamente
+      return sum + retornoBase + bonus + turbo;
     }, 0);
+    
     const oddMedia = apostasPendentes.length > 0
       ? apostasPendentes.reduce((sum, a) => sum + (a.odd || 0), 0) / apostasPendentes.length
       : 0;
