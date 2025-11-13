@@ -3,6 +3,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { formatCurrency } from "@/lib/utils";
 import { Clock, DollarSign, TrendingUp, Target } from "lucide-react";
 import type { Aposta } from "@/types/betting";
+import { motion } from "framer-motion";
 
 interface ResultadosKPIsProps {
   apostas: Aposta[];
@@ -11,26 +12,33 @@ interface ResultadosKPIsProps {
 
 export function ResultadosKPIs({ apostas, isLoading }: ResultadosKPIsProps) {
   const metrics = useMemo(() => {
-    const pendentes = apostas.filter((a) => 
-      a.resultado && ["Ganhou", "Perdeu", "Cashout"].includes(a.resultado)
+    const pendentes = apostas.filter((a) => a.resultado === "Pendente");
+    
+    const totalApostadoPendente = pendentes.reduce(
+      (sum, a) => sum + (a.valor_apostado || 0),
+      0
     );
-    const ganhas = pendentes.filter((a) => a.resultado === "Ganhou");
-    const perdidas = pendentes.filter((a) => a.resultado === "Perdeu");
 
-    const taxaAcerto = pendentes.length > 0
-      ? (ganhas.length / pendentes.length) * 100
-      : 0;
+    // Cálculo correto do retorno potencial
+    const retornoPotencial = pendentes.reduce((sum, a) => {
+      const retornoBase = (a.valor_apostado || 0) * (a.odd || 1);
+      const bonus = a.bonus || 0;
+      const turbo = a.turbo || 0; // Turbo já vem calculado corretamente do banco
+      return sum + retornoBase + bonus + turbo;
+    }, 0);
 
-    const oddMedia = apostas.length > 0
-      ? apostas.reduce((sum, a) => sum + (a.odd || 0), 0) / apostas.length
+    const lucroPotencial = retornoPotencial - totalApostadoPendente;
+
+    const roiPotencial = totalApostadoPendente > 0
+      ? ((lucroPotencial / totalApostadoPendente) * 100)
       : 0;
 
     return {
-      totalApostas: apostas.length,
-      ganhas: ganhas.length,
-      perdidas: perdidas.length,
-      taxaAcerto,
-      oddMedia,
+      apostasPendentes: pendentes.length,
+      totalApostadoPendente,
+      retornoPotencial,
+      lucroPotencial,
+      roiPotencial,
     };
   }, [apostas]);
 
@@ -56,6 +64,7 @@ export function ResultadosKPIs({ apostas, isLoading }: ResultadosKPIsProps) {
         icon={Target}
         isLoading={isLoading}
         delay={0.2}
+        description="Inclui bônus e turbo"
       />
       <KPICard
         title="Lucro Potencial"
