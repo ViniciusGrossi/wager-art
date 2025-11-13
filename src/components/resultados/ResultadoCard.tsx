@@ -48,7 +48,11 @@ export function ResultadoCard({ aposta, onSetResult }: ResultadoCardProps) {
     }
   };
 
-  const potentialReturn = (aposta.valor_apostado || 0) * (aposta.odd || 1);
+  const retornoBase = (aposta.valor_apostado || 0) * (aposta.odd || 1); // Retorno base (investimento + lucro)
+  const lucroBase = retornoBase - (aposta.valor_apostado || 0); // Lucro base
+  const turboValue = lucroBase * ((aposta.turbo || 0) / lucroBase); // Turbo já vem calculado do banco
+  const bonusValue = aposta.bonus || 0;
+  const potentialReturn = retornoBase + bonusValue + (aposta.turbo || 0);
   const potentialProfit = potentialReturn - (aposta.valor_apostado || 0);
 
   return (
