@@ -601,44 +601,243 @@ export default function Analises() {
             </Card>
           </div>
 
-          {/* Insights */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5" />
-                Insights
+         {/* Insights */}
+          <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Trophy className="w-6 h-6 text-primary" />
+                </div>
+                Insights Inteligentes
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Análises automáticas baseadas no seu desempenho
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {dashboardMetrics.roi >= 5 && (
-                  <Alert>
-                    <TrendingUp className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Excelente Performance!</strong> Seu ROI de {formatPercentage(dashboardMetrics.roi)} está acima da média.
-                    </AlertDescription>
-                  </Alert>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <Card className="border-2 border-success/20 bg-success/5 hover:shadow-lg hover:border-success/40 transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-success/20 group-hover:scale-110 transition-transform">
+                            <TrendingUp className="h-5 w-5 text-success" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-success mb-1 flex items-center gap-2">
+                              Excelente Performance! 
+                              <span className="text-xl">🚀</span>
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Seu ROI de <span className="font-bold text-success">{formatPercentage(dashboardMetrics.roi)}</span> está muito acima da média do mercado.
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-success/20">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Medal className="w-3 h-3" />
+                                Continue assim para maximizar seus lucros
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 )}
+                
                 {dashboardMetrics.taxaAcerto >= 60 && (
-                  <Alert>
-                    <Target className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Alta Precisão!</strong> Taxa de acerto de {formatPercentage(dashboardMetrics.taxaAcerto)} é excelente.
-                    </AlertDescription>
-                  </Alert>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Card className="border-2 border-primary/20 bg-primary/5 hover:shadow-lg hover:border-primary/40 transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-primary/20 group-hover:scale-110 transition-transform">
+                            <Target className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-primary mb-1 flex items-center gap-2">
+                              Alta Precisão!
+                              <span className="text-xl">🎯</span>
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Taxa de acerto de <span className="font-bold text-primary">{formatPercentage(dashboardMetrics.taxaAcerto)}</span> demonstra excelente análise.
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-primary/20">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Zap className="w-3 h-3" />
+                                Você está escolhendo muito bem suas apostas
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 )}
+                
                 {dashboardMetrics.apostasPorDia > 3 && (
-                  <Alert>
-                    <Activity className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Alto Volume!</strong> Média de {dashboardMetrics.apostasPorDia.toFixed(1)} apostas por dia.
-                    </AlertDescription>
-                  </Alert>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Card className="border-2 border-blue-500/20 bg-blue-500/5 hover:shadow-lg hover:border-blue-500/40 transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-blue-500/20 group-hover:scale-110 transition-transform">
+                            <Activity className="h-5 w-5 text-blue-500" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-blue-500 mb-1 flex items-center gap-2">
+                              Alto Volume!
+                              <span className="text-xl">📊</span>
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Média de <span className="font-bold text-blue-500">{dashboardMetrics.apostasPorDia.toFixed(1)}</span> apostas por dia mostra consistência.
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-blue-500/20">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Disciplina é chave para o sucesso
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {dashboardMetrics.sequenciaAtual >= 3 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <Card className="border-2 border-amber-500/20 bg-amber-500/5 hover:shadow-lg hover:border-amber-500/40 transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-amber-500/20 group-hover:scale-110 transition-transform">
+                            <Zap className="h-5 w-5 text-amber-500" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-amber-500 mb-1 flex items-center gap-2">
+                              Sequência Quente!
+                              <span className="text-xl">🔥</span>
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Você está em uma sequência de <span className="font-bold text-amber-500">{dashboardMetrics.sequenciaAtual}</span> vitórias consecutivas!
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-amber-500/20">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                Continue focado e mantenha a disciplina
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {dashboardMetrics.oddMedia >= 2.5 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <Card className="border-2 border-purple-500/20 bg-purple-500/5 hover:shadow-lg hover:border-purple-500/40 transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-purple-500/20 group-hover:scale-110 transition-transform">
+                            <Target className="h-5 w-5 text-purple-500" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-purple-500 mb-1 flex items-center gap-2">
+                              Estratégia Ousada!
+                              <span className="text-xl">💎</span>
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Odd média de <span className="font-bold text-purple-500">{dashboardMetrics.oddMedia.toFixed(2)}</span> indica busca por value bets.
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-purple-500/20">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Percent className="w-3 h-3" />
+                                Equilibre risco e retorno com sabedoria
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {dashboardMetrics.diasAtivos >= 30 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <Card className="border-2 border-green-500/20 bg-green-500/5 hover:shadow-lg hover:border-green-500/40 transition-all duration-300 cursor-pointer group">
+                      <CardContent className="p-5">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-green-500/20 group-hover:scale-110 transition-transform">
+                            <Calendar className="h-5 w-5 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-green-500 mb-1 flex items-center gap-2">
+                              Apostador Experiente!
+                              <span className="text-xl">⭐</span>
+                            </h4>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Com <span className="font-bold text-green-500">{dashboardMetrics.diasAtivos}</span> dias ativos, você já tem boa experiência.
+                            </p>
+                            <div className="mt-3 pt-3 border-t border-green-500/20">
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Trophy className="w-3 h-3" />
+                                A experiência é seu maior ativo
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 )}
               </div>
+
+              {/* Mensagem quando não há insights */}
+              {!(dashboardMetrics.roi >= 5 || 
+                  dashboardMetrics.taxaAcerto >= 60 || 
+                  dashboardMetrics.apostasPorDia > 3 ||
+                  dashboardMetrics.sequenciaAtual >= 3 ||
+                  dashboardMetrics.oddMedia >= 2.5 ||
+                  dashboardMetrics.diasAtivos >= 30) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center py-12"
+                >
+                  <div className="inline-flex p-4 rounded-full bg-muted/50 mb-4">
+                    <Trophy className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Continue apostando!</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    À medida que você registra mais apostas, insights inteligentes aparecerão aqui para ajudá-lo a melhorar seu desempenho.
+                  </p>
+                </motion.div>
+              )}
             </CardContent>
           </Card>
-        </TabsContent>
 
         {/* ABA 2: PERFORMANCE */}
         <TabsContent value="performance" className="space-y-6">
