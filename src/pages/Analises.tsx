@@ -12,6 +12,7 @@ import type { Aposta, SeriesData } from "@/types/betting";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
 import { useFilterStore } from "@/store/useFilterStore";
+import { AnalysisFilters } from "@/components/apostas/AnalysisFilters";
 import { 
   useDashboardMetrics, 
   usePerformanceMetrics, 
@@ -81,11 +82,29 @@ const CHART_COLORS = [
 
 export default function Analises() {
   const [apostas, setApostas] = useState<Aposta[]>([]);
+  const [allApostas, setAllApostas] = useState<Aposta[]>([]); // Para extrair casas/mercados
   const [series, setSeries] = useState<SeriesData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const { startDate, endDate, casa, tipo, resetFilters } = useFilterStore();
+  const { 
+    startDate, 
+    endDate, 
+    casa, 
+    tipo, 
+    resultado, 
+    mercado, 
+    oddMin, 
+    oddMax,
+    setStartDate,
+    setEndDate,
+    setCasa,
+    setResultado,
+    setMercado,
+    setOddMin,
+    setOddMax,
+    resetFilters 
+  } = useFilterStore();
 
   // Hooks de métricas
   const dashboardMetrics = useDashboardMetrics(apostas);
@@ -94,9 +113,23 @@ export default function Analises() {
   const oddsMetrics = useOddsMetrics(apostas);
   const temporalMetrics = useTemporalMetrics(apostas);
 
+  // Extrair valores únicos para filtros
+  const casasDisponiveis = Array.from(
+    new Set(allApostas.map(a => a.casa_de_apostas).filter(Boolean) as string[])
+  ).sort();
+
+  const mercadosDisponiveis = Array.from(
+    new Set(
+      allApostas
+        .map(a => a.detalhes)
+        .filter(Boolean)
+        .flatMap(d => d!.split(',').map(m => m.trim()))
+    )
+  ).sort();
+
   useEffect(() => {
     loadData();
-  }, [startDate, endDate, casa, tipo]);
+  }, [startDate, endDate, casa, tipo, resultado, mercado, oddMin, oddMax]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -104,7 +137,7 @@ export default function Analises() {
       const params = {
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        casa: casa || undefined,
+        casa: casa && casa !== "Todas" ? casa : undefined,
         tipo: tipo || undefined,
       };
 
@@ -113,7 +146,45 @@ export default function Analises() {
         apostasService.series(params),
       ]);
 
-      setApostas(apostasData.data);
+      // Guardar todas as apostas para filtros
+      setAllApostas(apostasData.data);
+
+      // Aplicar filtros adicionais no frontend
+      let filteredApostas = apostasData.data;
+
+      // Filtro de resultado
+      if (resultado && resultado !== "Todos") {
+        filteredApostas = filteredApostas.filter(a => a.resultado === resultado);
+      }
+
+      // Filtro de mercado (detalhes contém informação de mercado)
+      if (mercado && mercado !== "Todos") {
+        filteredApostas = filteredApostas.filter(a => 
+          a.detalhes && a.detalhes.toLowerCase().includes(mercado.toLowerCase())
+        );
+      }
+
+      // Filtro de odd mínima
+      if (oddMin) {
+        const minOdd = parseFloat(oddMin);
+        if (!isNaN(minOdd)) {
+          filteredApostas = filteredApostas.filter(a => 
+            a.odd && a.odd >= minOdd
+          );
+        }
+      }
+
+      // Filtro de odd máxima
+      if (oddMax) {
+        const maxOdd = parseFloat(oddMax);
+        if (!isNaN(maxOdd)) {
+          filteredApostas = filteredApostas.filter(a => 
+            a.odd && a.odd <= maxOdd
+          );
+        }
+      }
+
+      setApostas(filteredApostas);
       setSeries(seriesData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -374,11 +445,39 @@ export default function Analises() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
-          <Button onClick={resetFilters} variant="ghost" size="sm">
-            Limpar Filtros
-          </Button>
         </div>
       </div>
+
+      {/* Filtros Avançados */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtros Inteligentes</CardTitle>
+          <CardDescription>
+            Filtre suas apostas por data, casa, resultado, mercado e faixa de odds
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AnalysisFilters
+            startDate={startDate}
+            endDate={endDate}
+            casa={casa}
+            resultado={resultado}
+            mercado={mercado}
+            oddMin={oddMin}
+            oddMax={oddMax}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onCasaChange={setCasa}
+            onResultadoChange={setResultado}
+            onMercadoChange={setMercado}
+            onOddMinChange={setOddMin}
+            onOddMaxChange={setOddMax}
+            onClearFilters={resetFilters}
+            casasDisponiveis={casasDisponiveis}
+            mercadosDisponiveis={mercadosDisponiveis}
+          />
+        </CardContent>
+      </Card>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
