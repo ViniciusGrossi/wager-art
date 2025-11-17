@@ -161,7 +161,7 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
       return;
     }
 
-    if (data.valor_apostado > (selectedBookie.balance || 0)) {
+    if (!hasBonus && data.valor_apostado > (selectedBookie.balance || 0)) {
       toast({ 
         title: "Saldo Insuficiente", 
         description: `Você possui apenas ${formatCurrency(selectedBookie.balance || 0)} na ${selectedBookie.name}`,

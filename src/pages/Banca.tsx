@@ -7,13 +7,22 @@ import { TransactionsHistory } from "@/components/banca/TransactionsHistory";
 import { GoalsManager } from "@/components/banca/GoalsManager";
 import { BettingUnits } from "@/components/banca/BettingUnits";
 import { formatCurrency } from "@/lib/utils";
-import { Wallet, TrendingUp, Calendar } from "lucide-react";
+import { Wallet, TrendingUp, Calendar, Plus } from "lucide-react";
 import type { Bookie } from "@/types/betting";
 import dayjs from "dayjs";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 
 export default function Banca() {
   const [bookies, setBookies] = useState<Bookie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [initialBalance, setInitialBalance] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     loadBookies();
@@ -29,6 +38,34 @@ export default function Banca() {
       console.error("Erro ao carregar bookies:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCreateBookie = async () => {
+    const name = newName.trim();
+    const balance = parseFloat(initialBalance || "0");
+    if (!name) {
+      toast({ title: "Nome obrigatório", description: "Informe o nome da casa de apostas", variant: "destructive" });
+      return;
+    }
+    if (isNaN(balance) || balance < 0) {
+      toast({ title: "Saldo inválido", description: "Informe um saldo inicial válido", variant: "destructive" });
+      return;
+    }
+    setIsCreating(true);
+    try {
+      await bookiesService.create(name, balance);
+      toast({ title: "Sucesso", description: "Casa de apostas criada" });
+      setCreateOpen(false);
+      setNewName("");
+      setInitialBalance("");
+      await loadBookies();
+    } catch (error) {
+      console.error("Erro ao criar casa:", error);
+      const errMsg = (error as any)?.message || "Erro ao criar casa de apostas";
+      toast({ title: "Erro", description: errMsg, variant: "destructive" });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -51,6 +88,12 @@ export default function Banca() {
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Banca</h1>
           <p className="text-muted-foreground mt-1">Gerencie suas casas de apostas</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Casa
+          </Button>
         </div>
       </motion.div>
 
@@ -103,6 +146,41 @@ export default function Banca() {
 
         <TransactionsHistory />
       </div>
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova Casa de Apostas</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bookie-name">Nome da Casa</Label>
+              <Input
+                id="bookie-name"
+                placeholder="Ex: Bet365"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bookie-balance">Saldo Inicial (R$)</Label>
+              <Input
+                id="bookie-balance"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={initialBalance}
+                onChange={(e) => setInitialBalance(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setCreateOpen(false)} disabled={isCreating}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleCreateBookie} disabled={isCreating}>
+                {isCreating ? "Criando..." : "Criar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

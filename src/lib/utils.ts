@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import dayjs from "dayjs";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -17,5 +18,5 @@ export function formatPercentage(value: number): string {
 }
 
 export function formatDate(date: string): string {
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(date));
+  return dayjs(date).format("DD/MM/YYYY");
 }

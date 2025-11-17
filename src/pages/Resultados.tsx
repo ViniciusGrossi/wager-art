@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Aposta, ResultadoType } from "@/types/betting";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ export default function Resultados() {
       setApostas(data);
     } catch (error) {
       console.error("Erro ao carregar apostas:", error);
-      toast.error("Erro ao carregar apostas");
+      toast({ title: "Erro", description: "Erro ao carregar apostas", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -98,11 +98,11 @@ export default function Resultados() {
 
       await apostasService.setResult(id, resultado, aposta, cashoutValue);
       
-      toast.success(`Resultado marcado como ${resultado}`);
+      toast({ title: "Sucesso", description: `Resultado marcado como ${resultado}` });
       await loadApostas();
     } catch (error) {
       console.error("Erro ao definir resultado:", error);
-      toast.error("Erro ao definir resultado");
+      toast({ title: "Erro", description: "Erro ao definir resultado", variant: "destructive" });
     }
   };
 

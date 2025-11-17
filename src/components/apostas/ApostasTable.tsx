@@ -146,6 +146,9 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
+                <TableHead>
+                  Ações
+                </TableHead>
               </TableRow>
             ))}
           </TableHeader>
@@ -179,7 +182,7 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={columns.length + 1} className="h-24 text-center">
                   Nenhuma aposta encontrada
                 </TableCell>
               </TableRow>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { apostasService } from "@/services/apostas";
 import { ApostasTable } from "@/components/apostas/ApostasTable";
 import { CreateApostaDialog } from "@/components/apostas/CreateApostaDialog";
@@ -59,6 +59,10 @@ export default function Apostas() {
         </div>
         <div className="flex gap-2">
           <KellyCalculator />
+          <Button onClick={loadApostas} size="lg" variant="outline" className="gap-2">
+            <RefreshCw className="h-5 w-5" />
+            Atualizar
+          </Button>
           <Button onClick={() => setDialogOpen(true)} size="lg" className="gap-2">
             <Plus className="h-5 w-5" />
             Nova Aposta
