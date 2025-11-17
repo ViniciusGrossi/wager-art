@@ -1,5 +1,6 @@
-import { Home, ClipboardList, CheckCircle2, BarChart3, Wallet } from "lucide-react";
+import { Home, ClipboardList, CheckCircle2, BarChart3, Wallet, Bot, User, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +18,7 @@ const menuItems = [
   { title: "Resultados", url: "/resultados", icon: CheckCircle2 },
   { title: "Análises", url: "/analises", icon: BarChart3 },
   { title: "Banca", url: "/banca", icon: Wallet },
+  { title: "Assistente IA", url: "/assistente", icon: Bot },
 ];
 
 export function AppSidebar() {
@@ -48,6 +50,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      <div className="mt-auto border-t border-border p-4 space-y-2">
+        <Button variant="ghost" className="w-full justify-start gap-3" size="sm">
+          <User className="h-4 w-4" />
+          <span className="text-sm">Usuário</span>
+        </Button>
+        <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive" size="sm">
+          <LogOut className="h-4 w-4" />
+          <span className="text-sm">Sair</span>
+        </Button>
+      </div>
     </Sidebar>
   );
 }

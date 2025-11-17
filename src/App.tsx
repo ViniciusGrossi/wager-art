@@ -10,6 +10,7 @@ import Apostas from "./pages/Apostas";
 import Resultados from "./pages/Resultados";
 import Analises from "./pages/Analises";
 import Banca from "./pages/Banca";
+import Assistente from "./pages/Assistente";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/resultados" element={<Resultados />} />
               <Route path="/analises" element={<Analises />} />
               <Route path="/banca" element={<Banca />} />
+              <Route path="/assistente" element={<Assistente />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </MainLayout>
