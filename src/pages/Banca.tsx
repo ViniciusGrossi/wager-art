@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { bookiesService } from "@/services/bookies";
 import { BookieCard } from "@/components/banca/BookieCard";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { TransactionsHistory } from "@/components/banca/TransactionsHistory";
 import { GoalsManager } from "@/components/banca/GoalsManager";
+import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { Wallet, TrendingUp, Calendar } from "lucide-react";
+import { Wallet, TrendingUp, Calendar, Target } from "lucide-react";
 import type { Bookie } from "@/types/betting";
 import dayjs from "dayjs";
 
@@ -39,6 +40,11 @@ export default function Banca() {
   const maisRecente = bookies.reduce((recent, b) => 
     dayjs(b.last_update).isAfter(dayjs(recent.last_update)) ? b : recent
   , bookies[0] || { last_update: new Date().toISOString() });
+
+  // Cálculo das unidades de aposta (1 unidade = 2% da banca total)
+  const unidade = useMemo(() => {
+    return totalBalance * 0.02;
+  }, [totalBalance]);
 
   return (
     <div className="space-y-6">
@@ -79,49 +85,57 @@ export default function Banca() {
         </div>
         
         {/* Unidades de Aposta */}
-        <Card className="p-6 bg-card border-border">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-primary" />
-              <h2 className="text-2xl font-bold">Unidades de Aposta</h2>
-            </div>
-            <p className="text-sm text-muted-foreground">1 unidade = 2% da banca</p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[0.25, 0.5, 0.75, 1].map((multiplicador) => (
-              <div key={multiplicador} className="bg-accent/10 border border-primary/20 rounded-lg p-4">
-                <div className="text-sm text-muted-foreground mb-1">{multiplicador} unidade{multiplicador !== 1 ? 's' : ''}</div>
-                <div className="text-2xl font-bold text-primary">
-                  R$ {(unidade * multiplicador).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="p-6 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Target className="w-5 h-5 text-primary" />
                 </div>
+                <h2 className="text-2xl font-bold">Unidades de Aposta</h2>
               </div>
-            ))}
-          </div>
-        </Card>
+              <p className="text-sm text-muted-foreground">
+                1 unidade = 2% da banca total
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[0.25, 0.5, 0.75, 1].map((multiplicador) => (
+                <motion.div 
+                  key={multiplicador}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 + multiplicador * 0.1 }}
+                  className="group relative overflow-hidden bg-card hover:bg-accent/50 border-2 border-primary/20 hover:border-primary/40 rounded-lg p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="text-sm text-muted-foreground mb-2 font-medium">
+                      {multiplicador} unidade{multiplicador !== 1 ? 's' : ''}
+                    </div>
+                    <div className="text-2xl font-bold text-primary mb-1">
+                      {formatCurrency(unidade * multiplicador)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {(multiplicador * 2).toFixed(2)}% da banca
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {totalBalance === 0 && (
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 Adicione saldo às suas casas de apostas para calcular as unidades
+                </p>
+              </div>
+            )}
+          </Card>
+        </motion.div>
         
         <GoalsManager />
-
-        {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-40 bg-muted/50 animate-pulse rounded-xl" />
-            ))}
-          </div>
-        ) : bookies.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {bookies.map((bookie) => (
-              <BookieCard key={bookie.id} bookie={bookie} onUpdate={loadBookies} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-muted-foreground">
-            Nenhuma casa de apostas cadastrada
-          </div>
-        )}
-
-        <TransactionsHistory />
-      </div>
-    </div>
-  );
-}
