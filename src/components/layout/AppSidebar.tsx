@@ -27,6 +27,10 @@ export function AppSidebar() {
   const { isInstallable, installPWA } = usePWA();
 
   const handleInstallClick = async () => {
+    if (!isInstallable) {
+      toast.info("O app já está instalado ou não está disponível para instalação neste navegador.");
+      return;
+    }
     await installPWA();
     toast.success("App instalado com sucesso!");
   };
@@ -61,17 +65,15 @@ export function AppSidebar() {
       </SidebarContent>
       
       <div className="mt-auto border-t border-border p-4 space-y-2">
-        {isInstallable && (
-          <Button 
-            onClick={handleInstallClick}
-            variant="default" 
-            className="w-full justify-start gap-3" 
-            size="sm"
-          >
-            <Download className="h-4 w-4" />
-            <span className="text-sm">Instalar App</span>
-          </Button>
-        )}
+        <Button 
+          onClick={handleInstallClick}
+          variant="default" 
+          className="w-full justify-start gap-3" 
+          size="sm"
+        >
+          <Download className="h-4 w-4" />
+          <span className="text-sm">Instalar App</span>
+        </Button>
         <Button variant="ghost" className="w-full justify-start gap-3" size="sm">
           <User className="h-4 w-4" />
           <span className="text-sm">Usuário</span>
