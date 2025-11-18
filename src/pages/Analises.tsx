@@ -2207,30 +2207,3 @@ export default function Analises() {
 }
 
         
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">EV por Faixa de Odd<InfoTooltip title="Valor Esperado" description="Estimativa de valor esperado por faixa de odd, usando taxa de acerto histórica" /></CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={evMetrics.evByOddBin}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="faixa" stroke="hsl(var(--muted-foreground))" />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <RechartsTooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }} />
-                    <Bar dataKey="ev" fill={CHART_COLORS[1]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">Brier Score<InfoTooltip title="Brier Score" description="Qualidade das probabilidades estimadas em relação aos resultados" /></CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{evMetrics.brierScore.toFixed(3)}</div>
-              </CardContent>
-            </Card>
-
-        
