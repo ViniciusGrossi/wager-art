@@ -24,6 +24,7 @@ import {
   useEVMetrics,
   useAdvancedRiskMetrics
 } from "@/hooks/useAnalysisMetrics";
+import { useTurboMetrics } from "@/hooks/useTurboMetrics";
 import { InfoTooltip } from "@/components/analysis/InfoTooltip";
 import {
   AreaChart,
@@ -120,6 +121,7 @@ export default function Analises() {
   const exposureMetrics = useExposureMetrics(apostas);
   const evMetrics = useEVMetrics(apostas);
   const advancedRisk = useAdvancedRiskMetrics(apostas);
+  const turboMetrics = useTurboMetrics(apostas);
 
   // Extrair valores únicos para filtros
   const casasDisponiveis = Array.from(
@@ -489,7 +491,7 @@ export default function Analises() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 h-auto p-1">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2 h-auto p-1">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="casas">Casas</TabsTrigger>
@@ -498,6 +500,7 @@ export default function Analises() {
           <TabsTrigger value="risco">Risco</TabsTrigger>
           <TabsTrigger value="temporal">Temporal</TabsTrigger>
           <TabsTrigger value="padroes">Padrões</TabsTrigger>
+          <TabsTrigger value="turbo">Turbo</TabsTrigger>
         </TabsList>
 
         {/* ABA 1: DASHBOARD */}
@@ -2199,6 +2202,217 @@ export default function Analises() {
                 </div>
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* ABA 9: TURBO */}
+        <TabsContent value="turbo" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Comparação Geral */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Comparação: Com vs Sem Turbo
+                  <InfoTooltip 
+                    title="Análise de Turbo"
+                    description="Compare o desempenho de apostas com e sem turbo"
+                  />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                        <Zap className="h-4 w-4" />
+                        <h4 className="font-semibold">Com Turbo</h4>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Apostas</span>
+                          <span className="font-medium">{turboMetrics.comTurbo.total}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Investido</span>
+                          <span className="font-medium">{formatCurrency(turboMetrics.comTurbo.investido)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Lucro</span>
+                          <span className={`font-medium ${turboMetrics.comTurbo.lucro >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(turboMetrics.comTurbo.lucro)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">ROI</span>
+                          <span className={`font-bold ${turboMetrics.comTurbo.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {turboMetrics.comTurbo.roi > 0 ? '+' : ''}{formatPercentage(turboMetrics.comTurbo.roi)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Taxa Acerto</span>
+                          <span className="font-medium">{formatPercentage(turboMetrics.comTurbo.taxaAcerto)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <h4 className="font-semibold">Sem Turbo</h4>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Apostas</span>
+                          <span className="font-medium">{turboMetrics.semTurbo.total}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Investido</span>
+                          <span className="font-medium">{formatCurrency(turboMetrics.semTurbo.investido)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Lucro</span>
+                          <span className={`font-medium ${turboMetrics.semTurbo.lucro >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(turboMetrics.semTurbo.lucro)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">ROI</span>
+                          <span className={`font-bold ${turboMetrics.semTurbo.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {turboMetrics.semTurbo.roi > 0 ? '+' : ''}{formatPercentage(turboMetrics.semTurbo.roi)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Taxa Acerto</span>
+                          <span className="font-medium">{formatPercentage(turboMetrics.semTurbo.taxaAcerto)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Métricas de Impacto */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Impacto do Turbo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Lucro Adicional Gerado</span>
+                      <span className={`text-xl font-bold ${turboMetrics.lucroAdicionalTurbo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {turboMetrics.lucroAdicionalTurbo > 0 ? '+' : ''}{formatCurrency(turboMetrics.lucroAdicionalTurbo)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Lucro extra obtido pelo uso do turbo em apostas vencedoras
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Impacto no ROI Geral</span>
+                      <span className={`text-xl font-bold ${turboMetrics.impactoROI >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {turboMetrics.impactoROI > 0 ? '+' : ''}{formatPercentage(turboMetrics.impactoROI)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Diferença no ROI total comparando com e sem o uso do turbo
+                    </p>
+                  </div>
+
+                  {turboMetrics.comTurbo.total > 0 && (
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Lucro Médio por Aposta</span>
+                          <span className="font-medium">{formatCurrency(turboMetrics.comTurbo.lucroMedio)}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Odd Média (Turbo)</span>
+                          <span className="font-medium">{turboMetrics.comTurbo.oddMedia.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Performance por Nível de Turbo */}
+          {turboMetrics.porNivelTurbo.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance por Nível de Turbo</CardTitle>
+                <CardDescription>Análise detalhada de cada percentual de turbo utilizado</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={turboMetrics.porNivelTurbo}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="nivel" stroke="hsl(var(--muted-foreground))" />
+                      <YAxis stroke="hsl(var(--muted-foreground))" />
+                      <RechartsTooltip 
+                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }}
+                      />
+                      <Legend />
+                      <Bar dataKey="roi" fill={CHART_COLORS[0]} name="ROI (%)" />
+                      <Bar dataKey="taxaAcerto" fill={CHART_COLORS[1]} name="Taxa Acerto (%)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {turboMetrics.porNivelTurbo.map((nivel) => (
+                      <Card key={nivel.nivel}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm flex items-center gap-1">
+                            <Zap className="h-3 w-3" />
+                            Turbo {nivel.nivel}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Apostas</span>
+                            <span className="font-medium">{nivel.total}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Investido</span>
+                            <span className="font-medium">{formatCurrency(nivel.investido)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">ROI</span>
+                            <span className={`font-bold ${nivel.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {nivel.roi > 0 ? '+' : ''}{formatPercentage(nivel.roi)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Taxa</span>
+                            <span className="font-medium">{formatPercentage(nivel.taxaAcerto)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Alerta se não houver dados */}
+          {turboMetrics.comTurbo.total === 0 && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Nenhuma aposta com turbo encontrada no período selecionado.
+              </AlertDescription>
+            </Alert>
           )}
         </TabsContent>
       </Tabs>

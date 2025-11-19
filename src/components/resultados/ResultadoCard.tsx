@@ -50,7 +50,8 @@ export function ResultadoCard({ aposta, onSetResult }: ResultadoCardProps) {
 
   const lucroBase = (aposta.valor_apostado || 0) * Math.max((aposta.odd || 0) - 1, 0);
   const lucroBonus = (aposta.bonus || 0) * Math.max((aposta.odd || 0) - 1, 0);
-  const turbo = aposta.turbo || 0;
+  const turboRaw = aposta.turbo || 0;
+  const turbo = turboRaw > 1 ? turboRaw / 100 : turboRaw;
   const lucroSemTurbo = lucroBase + lucroBonus;
   const potentialProfit = turbo > 0 ? lucroSemTurbo * (1 + turbo) : lucroSemTurbo;
   const potentialReturn = (aposta.valor_apostado || 0) + potentialProfit;
@@ -71,7 +72,7 @@ export function ResultadoCard({ aposta, onSetResult }: ResultadoCardProps) {
                   {(aposta.turbo || 0) > 0 && (
                     <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs">
                       <Zap className="h-3 w-3" />
-                      <span>+{((aposta.turbo || 0) * 100).toFixed(0)}%</span>
+                      <span>+{(aposta.turbo && aposta.turbo > 1 ? aposta.turbo : (aposta.turbo || 0) * 100).toFixed(0)}%</span>
                     </div>
                   )}
                   {(aposta.bonus || 0) > 0 && (
