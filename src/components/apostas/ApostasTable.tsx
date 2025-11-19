@@ -126,27 +126,27 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative w-full">
+        <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por partida, detalhes..."
+          placeholder="Buscar por partida..."
           value={globalFilter}
           onChange={(e) => setGlobalFilter(e.target.value)}
-          className="pl-10"
+          className="pl-8 sm:pl-10 text-sm"
         />
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="rounded-xl border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="text-xs sm:text-sm whitespace-nowrap">
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
-                <TableHead>
+                <TableHead className="text-xs sm:text-sm">
                   Ações
                 </TableHead>
               </TableRow>
@@ -163,11 +163,11 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
                   className="border-b hover:bg-muted/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="text-xs sm:text-sm py-2 sm:py-3">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
-                  <TableCell>
+                  <TableCell className="py-2 sm:py-3">
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -191,16 +191,17 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
+        <div className="text-xs sm:text-sm text-muted-foreground">
           Mostrando {table.getRowModel().rows.length} de {data.length} apostas
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
+            className="hidden sm:flex"
           >
             <ChevronsLeft className="h-4 w-4" />
           </Button>
@@ -212,7 +213,7 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm">
+          <span className="text-xs sm:text-sm px-2">
             Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
           </span>
           <Button
@@ -228,6 +229,7 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
             size="sm"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
+            className="hidden sm:flex"
           >
             <ChevronsRight className="h-4 w-4" />
           </Button>

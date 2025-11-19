@@ -279,7 +279,7 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
               )}
             </AnimatePresence>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="categoria"
@@ -432,7 +432,7 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
               )}
             />
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="valor_apostado"
@@ -523,26 +523,26 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                 <Zap className="h-4 w-4" />
                 Turbo
               </FormLabel>
-              <div className="grid grid-cols-4 gap-2">
-                {turboOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={selectedTurbo === option.value ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => setSelectedTurbo(option.value)}
-                    className={cn(
-                      "transition-all font-semibold",
-                      selectedTurbo === option.value && "ring-2 ring-primary ring-offset-2"
-                    )}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {turboOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={selectedTurbo === option.value ? "default" : "outline"}
+                  size="default"
+                  onClick={() => setSelectedTurbo(option.value)}
+                  className={cn(
+                    "transition-all font-semibold text-xs sm:text-sm",
+                    selectedTurbo === option.value && "ring-2 ring-primary ring-offset-2"
+                  )}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="partida"

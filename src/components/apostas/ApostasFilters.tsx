@@ -35,9 +35,9 @@ export function ApostasFilters({
   };
 
   return (
-    <div className="flex flex-wrap gap-3 items-center">
+    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
       <Select value={selectedStatus} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-full sm:w-[180px]">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -50,7 +50,7 @@ export function ApostasFilters({
       </Select>
 
       <Select value={selectedCasa} onValueChange={onCasaChange}>
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-full sm:w-[200px]">
           <SelectValue placeholder="Casa de Apostas" />
         </SelectTrigger>
         <SelectContent>
@@ -64,7 +64,7 @@ export function ApostasFilters({
       </Select>
 
       {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters}>
+        <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full sm:w-auto">
           <X className="h-4 w-4 mr-2" />
           Limpar Filtros
         </Button>
