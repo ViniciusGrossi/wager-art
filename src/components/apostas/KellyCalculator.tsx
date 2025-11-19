@@ -8,13 +8,12 @@ import { Calculator, TrendingUp, AlertCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { bookiesService } from "@/services/bookies";
-
 export function KellyCalculator() {
   const [isOpen, setIsOpen] = useState(false);
   const [bankroll, setBankroll] = useState<number>(0);
   const [odd, setOdd] = useState<number>(2.0);
   const [probability, setProbability] = useState<number>(50);
-  
+
   // Carregar banca real
   useEffect(() => {
     const loadBankroll = async () => {
@@ -26,81 +25,68 @@ export function KellyCalculator() {
         console.error("Erro ao carregar banca:", error);
       }
     };
-    
     if (isOpen) {
       loadBankroll();
     }
   }, [isOpen]);
-  
+
   // Calcular probabilidade implícita da odd
   useEffect(() => {
     if (odd >= 1.01) {
-      const impliedProbability = (1 / odd) * 100;
+      const impliedProbability = 1 / odd * 100;
       setProbability(Math.round(impliedProbability));
     }
   }, [odd]);
-  
+
   // Critério de Kelly: f = (p*b - (1-p)) / b
   // onde p = probabilidade de vitória, b = odd - 1
   const calculateKelly = () => {
     const p = probability / 100;
     const b = odd - 1;
     const kelly = (p * b - (1 - p)) / b;
-    
+
     // Kelly fracionário (recomendado: 25% do Kelly completo para reduzir volatilidade)
     const fractionalKelly = kelly * 0.25;
-    
     return {
       fullKelly: Math.max(0, kelly),
       fractionalKelly: Math.max(0, fractionalKelly),
       fullStake: Math.max(0, bankroll * kelly),
-      fractionalStake: Math.max(0, bankroll * fractionalKelly),
+      fractionalStake: Math.max(0, bankroll * fractionalKelly)
     };
   };
-  
   const kelly = calculateKelly();
-  
   const getRecommendation = () => {
     if (kelly.fullKelly <= 0) {
       return {
         text: "Aposta não recomendada",
         description: "A probabilidade estimada não justifica o risco nessa odd",
-        color: "text-destructive",
+        color: "text-destructive"
       };
     }
-    
     if (kelly.fullKelly > 0.15) {
       return {
         text: "Oportunidade forte",
         description: "Alta expectativa de valor, mas considere Kelly fracionário",
-        color: "text-green-600",
+        color: "text-green-600"
       };
     }
-    
     if (kelly.fullKelly > 0.05) {
       return {
         text: "Oportunidade moderada",
         description: "Valor positivo identificado",
-        color: "text-yellow-600",
+        color: "text-yellow-600"
       };
     }
-    
     return {
       text: "Oportunidade pequena",
       description: "Valor positivo mínimo",
-      color: "text-blue-600",
+      color: "text-blue-600"
     };
   };
-  
   const recommendation = getRecommendation();
-  
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+  return <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Calculator className="w-4 h-4" />
-          Calculadora Kelly
-        </Button>
+        
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -115,57 +101,29 @@ export function KellyCalculator() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="bankroll">Banca Total</Label>
-              <Input
-                id="bankroll"
-                type="number"
-                value={bankroll}
-                onChange={(e) => setBankroll(Number(e.target.value))}
-                min={0}
-                step={100}
-              />
+              <Input id="bankroll" type="number" value={bankroll} onChange={e => setBankroll(Number(e.target.value))} min={0} step={100} />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="odd">Odd da Aposta</Label>
-              <Input
-                id="odd"
-                type="number"
-                value={odd}
-                onChange={(e) => setOdd(Number(e.target.value))}
-                min={1.01}
-                step={0.1}
-              />
+              <Input id="odd" type="number" value={odd} onChange={e => setOdd(Number(e.target.value))} min={1.01} step={0.1} />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="probability">
                 Probabilidade (%)
                 <span className="text-xs text-muted-foreground ml-2">
-                  Sugerido: {((1 / odd) * 100).toFixed(1)}%
+                  Sugerido: {(1 / odd * 100).toFixed(1)}%
                 </span>
               </Label>
-              <Input
-                id="probability"
-                type="number"
-                value={probability}
-                onChange={(e) => setProbability(Number(e.target.value))}
-                min={0}
-                max={100}
-                step={1}
-              />
+              <Input id="probability" type="number" value={probability} onChange={e => setProbability(Number(e.target.value))} min={0} max={100} step={1} />
             </div>
           </div>
           
           {/* Slider para probabilidade */}
           <div className="space-y-2">
             <Label>Ajuste de Probabilidade: {probability}%</Label>
-            <Slider
-              value={[probability]}
-              onValueChange={(value) => setProbability(value[0])}
-              min={0}
-              max={100}
-              step={1}
-            />
+            <Slider value={[probability]} onValueChange={value => setProbability(value[0])} min={0} max={100} step={1} />
           </div>
           
           {/* Resultados */}
@@ -232,6 +190,5 @@ export function KellyCalculator() {
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }
