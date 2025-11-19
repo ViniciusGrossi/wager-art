@@ -1,7 +1,9 @@
-import { Home, ClipboardList, CheckCircle2, BarChart3, Wallet, Bot, User, LogOut, Download } from "lucide-react";
+import { Home, ClipboardList, CheckCircle2, BarChart3, Wallet, Bot, Settings, LogOut, Download } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { usePWA } from "@/hooks/usePWA";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Sidebar,
@@ -25,6 +27,8 @@ const menuItems = [
 
 export function AppSidebar() {
   const { isInstallable, installPWA } = usePWA();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleInstallClick = async () => {
     if (!isInstallable) {
@@ -33,6 +37,16 @@ export function AppSidebar() {
     }
     await installPWA();
     toast.success("App instalado com sucesso!");
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error("Erro ao sair");
+    } else {
+      toast.success("Logout realizado com sucesso!");
+      navigate("/auth");
+    }
   };
 
   return (
@@ -74,11 +88,21 @@ export function AppSidebar() {
           <Download className="h-4 w-4" />
           <span className="text-sm">Instalar App</span>
         </Button>
-        <Button variant="ghost" className="w-full justify-start gap-3" size="sm">
-          <User className="h-4 w-4" />
-          <span className="text-sm">Usuário</span>
+        <Button 
+          onClick={() => navigate("/configuracoes")}
+          variant="ghost" 
+          className="w-full justify-start gap-3" 
+          size="sm"
+        >
+          <Settings className="h-4 w-4" />
+          <span className="text-sm">Configurações</span>
         </Button>
-        <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive" size="sm">
+        <Button 
+          onClick={handleSignOut}
+          variant="ghost" 
+          className="w-full justify-start gap-3 text-destructive hover:text-destructive hover:bg-destructive/10" 
+          size="sm"
+        >
           <LogOut className="h-4 w-4" />
           <span className="text-sm">Sair</span>
         </Button>
