@@ -47,24 +47,24 @@ export default function Apostas() {
   }, [apostas, selectedStatus, selectedCasa]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-2 sm:px-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between flex-wrap gap-4"
+        className="flex items-center justify-between flex-col sm:flex-row gap-3"
       >
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Apostas</h1>
-          <p className="text-muted-foreground mt-1">Gerencie todas as suas apostas</p>
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">Apostas</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">Gerencie todas as suas apostas</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <KellyCalculator />
-          <Button onClick={loadApostas} size="lg" variant="outline" className="gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Atualizar
+          <Button onClick={loadApostas} size="default" variant="outline" className="gap-2 flex-1 sm:flex-initial">
+            <RefreshCw className="h-4 w-4" />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
-          <Button onClick={() => setDialogOpen(true)} size="lg" className="gap-2">
-            <Plus className="h-5 w-5" />
+          <Button onClick={() => setDialogOpen(true)} size="default" className="gap-2 flex-1 sm:flex-initial">
+            <Plus className="h-4 w-4" />
             Nova Aposta
           </Button>
         </div>

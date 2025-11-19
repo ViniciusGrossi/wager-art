@@ -107,16 +107,17 @@ export const apostasService = {
       // Lucro do bônus (apenas o lucro, não retorna o valor do bônus)
       const lucroBonus = (apostaData.bonus || 0) * ((apostaData.odd || 1) - 1);
       
-      // Turbo aplicado sobre o lucro total
-      const turbo = apostaData.turbo || 0;
-      const isPercentTurbo = turbo > 0 && turbo <= 1;
-      const turboProfit = isPercentTurbo ? (lucroBase + lucroBonus) * turbo : turbo;
+      // Lucro total sem turbo
+      const lucroSemTurbo = lucroBase + lucroBonus;
       
-      const lucroTotal = (lucroBase + lucroBonus) + turboProfit;
+      // Turbo multiplica o lucro total (ex: 25% turbo = lucro * 1.25)
+      const turbo = apostaData.turbo || 0;
+      const lucroTotal = turbo > 0 ? lucroSemTurbo * (1 + turbo) : lucroSemTurbo;
+      
       valor_final = lucroTotal;
       
-      // Retornar à banca: valor apostado + lucro base + lucro bonus (não retorna o valor do bônus original)
-      updateBalance = (apostaData.valor_apostado || 0) + lucroBase + lucroBonus + turboProfit;
+      // Retornar à banca: valor apostado + lucro total com turbo
+      updateBalance = (apostaData.valor_apostado || 0) + lucroTotal;
     } else if (resultado === "Perdeu") {
       // Perde apenas o valor apostado, bônus já não estava na banca
       valor_final = -(apostaData.valor_apostado || 0);
