@@ -51,7 +51,7 @@ export function ApostasTable({ data, isLoading, onReload }: ApostasTableProps) {
               {(row.original.turbo || 0) > 0 && (
                 <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px]">
                   <Zap className="h-2.5 w-2.5" />
-                  <span>+{((row.original.turbo || 0) * 100).toFixed(0)}%</span>
+                  <span>+{(row.original.turbo && row.original.turbo > 1 ? row.original.turbo : (row.original.turbo || 0) * 100).toFixed(0)}%</span>
                 </div>
               )}
               {(row.original.bonus || 0) > 0 && (

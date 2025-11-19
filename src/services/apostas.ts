@@ -111,7 +111,8 @@ export const apostasService = {
       const lucroSemTurbo = lucroBase + lucroBonus;
       
       // Turbo multiplica o lucro total (ex: 25% turbo = lucro * 1.25)
-      const turbo = apostaData.turbo || 0;
+      const turboRaw = apostaData.turbo || 0;
+      const turbo = turboRaw > 1 ? turboRaw / 100 : turboRaw;
       const lucroTotal = turbo > 0 ? lucroSemTurbo * (1 + turbo) : lucroSemTurbo;
       
       valor_final = lucroTotal;
