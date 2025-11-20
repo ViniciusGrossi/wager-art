@@ -162,8 +162,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
   }, [open]);
 
   useEffect(() => {
-    form.setValue("turbo", turbo);
-  }, [turbo]);
+    form.setValue("turbo", selectedTurbo);
+  }, [selectedTurbo, form]);
 
   const loadBookies = async () => {
     try {

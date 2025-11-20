@@ -1,12 +1,22 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Minus, RefreshCw, ArrowRightLeft, Gift, Settings, HelpCircle } from "lucide-react";
+import { Plus, Minus, RefreshCw, ArrowRightLeft, Gift, Settings, HelpCircle, Trash2 } from "lucide-react";
 import { transactionsService } from "@/services/transactions";
 import { bookiesService } from "@/services/bookies";
 import type { Bookie, TransactionType } from "@/types/betting";
@@ -61,6 +71,7 @@ export function TransactionDialog({ bookie, open, onOpenChange, onSuccess }: Tra
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleTransaction = async (type: TransactionType) => {
     const value = parseFloat(amount);
@@ -149,14 +160,45 @@ export function TransactionDialog({ bookie, open, onOpenChange, onSuccess }: Tra
     return found?.label || type;
   };
 
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      await bookiesService.delete(bookie.id);
+      toast({
+        title: "Sucesso",
+        description: "Casa de apostas excluída com sucesso"
+      });
+      setShowDeleteConfirm(false);
+      onSuccess();
+      onOpenChange(false);
+    } catch (error) {
+      toast({ title: "Erro", description: "Erro ao excluir casa de apostas", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{bookie.name}</DialogTitle>
-          <DialogDescription>
-            Saldo atual: <span className="font-bold text-foreground">{formatCurrency(bookie.balance || 0)}</span>
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <DialogTitle>{bookie.name}</DialogTitle>
+              <DialogDescription>
+                Saldo atual: <span className="font-bold text-foreground">{formatCurrency(bookie.balance || 0)}</span>
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              disabled={isLoading}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         {!showAdjust ? (
@@ -306,6 +348,29 @@ export function TransactionDialog({ bookie, open, onOpenChange, onSuccess }: Tra
           </div>
         )}
       </DialogContent>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Casa de Apostas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{bookie.name}</strong>?
+              <br />
+              Esta ação não pode ser desfeita e todas as transações relacionadas serão removidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isLoading ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

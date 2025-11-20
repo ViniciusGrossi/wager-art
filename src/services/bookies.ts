@@ -34,7 +34,7 @@ export const bookiesService = {
   async updateBalance(id: number, newBalance: number) {
     const { error } = await supabase
       .from("bookies")
-      .update({ 
+      .update({
         balance: newBalance,
         last_update: new Date().toISOString()
       })
@@ -55,5 +55,18 @@ export const bookiesService = {
 
     if (error) throw error;
     return data as Bookie;
+  },
+
+  async delete(id: number) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
+    const { error } = await supabase
+      .from("bookies")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
   },
 };
