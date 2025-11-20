@@ -53,7 +53,7 @@ interface CreateApostaDialogProps {
 
 const categorias = [
   "Resultado",
-  "Finalizacoes", 
+  "Finalizacoes",
   "Escanteios",
   "HT",
   "FT",
@@ -140,18 +140,18 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
   const odd = form.watch("odd") || 1;
   const bonus = form.watch("bonus") || 0;
   const turbo = form.watch("turbo") || 0;
-  
+
   // Calcular lucro base (do dinheiro real) e lucro do bônus separadamente
   const lucroBase = valorApostado * (odd - 1);
   const lucroBonus = bonus * (odd - 1);
   const lucroTotal = lucroBase + lucroBonus;
-  
+
   // Turbo aplica sobre o lucro total
   const turboProfit = lucroTotal * turbo;
-  
+
   // Lucro potencial total
   const lucroPotencial = lucroTotal + turboProfit;
-  
+
   // Retorno potencial = valor apostado + lucro total + turbo
   const retornoPotencial = valorApostado + lucroPotencial;
 
@@ -182,10 +182,10 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
 
     // Validação de saldo: apenas o valor apostado (não bônus) deve ser descontado
     if (data.valor_apostado > (selectedBookie.balance || 0)) {
-      toast({ 
-        title: "Saldo Insuficiente", 
+      toast({
+        title: "Saldo Insuficiente",
         description: `Você possui apenas ${formatCurrency(selectedBookie.balance || 0)} na ${selectedBookie.name}`,
-        variant: "destructive" 
+        variant: "destructive"
       });
       return;
     }
@@ -310,7 +310,7 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                   const filteredCategorias = categorias.filter((cat) =>
                     cat.toLowerCase().includes(categorySearch.toLowerCase())
                   );
-                  
+
                   return (
                     <FormItem>
                       <FormLabel>Categorias</FormLabel>
@@ -331,48 +331,72 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0 z-50" align="start">
-                          <Command shouldFilter={false}>
-                            <CommandInput 
-                              placeholder="Buscar categoria..." 
-                              value={categorySearch}
-                              onValueChange={setCategorySearch}
-                            />
-                            <CommandList>
-                              <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
-                              <CommandGroup>
-                                {filteredCategorias.map((cat) => (
-                                  <CommandItem
-                                    key={cat}
-                                    value={cat}
-                                    onSelect={() => {
-                                      const currentValue = field.value || [];
-                                      const newValue = currentValue.includes(cat)
-                                        ? currentValue.filter((v) => v !== cat)
-                                        : [...currentValue, cat];
-                                      field.onChange(newValue);
-                                    }}
-                                    className="flex items-center space-x-2 cursor-pointer"
-                                  >
-                                    <Checkbox
-                                      checked={field.value?.includes(cat)}
-                                      onCheckedChange={(checked) => {
+                        <PopoverContent
+                          className="w-full p-0 z-50"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <div className="flex flex-col" style={{ maxHeight: '350px', height: '350px' }}>
+                            <div className="p-3 border-b flex-shrink-0 bg-popover">
+                              <Input
+                                placeholder="Buscar categoria..."
+                                value={categorySearch}
+                                onChange={(e) => setCategorySearch(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                            <div
+                              className="flex-1 p-2"
+                              style={{
+                                overflowY: 'scroll',
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y',
+                                overscrollBehavior: 'contain',
+                                minHeight: 0
+                              } as React.CSSProperties}
+                              onWheel={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              {filteredCategorias.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  Nenhuma categoria encontrada.
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  {filteredCategorias.map((cat) => (
+                                    <div
+                                      key={cat}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         const currentValue = field.value || [];
-                                        const newValue = checked
-                                          ? [...currentValue, cat]
-                                          : currentValue.filter((v) => v !== cat);
+                                        const newValue = currentValue.includes(cat)
+                                          ? currentValue.filter((v) => v !== cat)
+                                          : [...currentValue, cat];
                                         field.onChange(newValue);
                                       }}
-                                    />
-                                    <span className="flex-1">{cat}</span>
-                                    {field.value?.includes(cat) && (
-                                      <Check className="h-4 w-4 text-primary" />
-                                    )}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
+                                      className="flex items-center space-x-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
+                                    >
+                                      <Checkbox
+                                        checked={field.value?.includes(cat)}
+                                        onCheckedChange={(checked) => {
+                                          const currentValue = field.value || [];
+                                          const newValue = checked
+                                            ? [...currentValue, cat]
+                                            : currentValue.filter((v) => v !== cat);
+                                          field.onChange(newValue);
+                                        }}
+                                      />
+                                      <span className="flex-1 text-sm">{cat}</span>
+                                      {field.value?.includes(cat) && (
+                                        <Check className="h-4 w-4 text-primary" />
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </PopoverContent>
                       </Popover>
                       {field.value.length > 0 && (
@@ -452,39 +476,65 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                      <Command>
-                        <CommandInput placeholder="Buscar casa de apostas..." />
-                        <CommandList>
-                          <CommandEmpty>Nenhuma casa encontrada.</CommandEmpty>
-                          <CommandGroup>
-                            {bookies.map((bookie) => (
-                              <CommandItem
-                                key={bookie.id}
-                                value={bookie.name}
-                                onSelect={() => {
-                                  field.onChange(bookie.name);
-                                  setSelectedBookie(bookie);
-                                  setBookieOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    field.value === bookie.name ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{bookie.name}</span>
-                                  <span className="text-xs text-muted-foreground ml-4">
-                                    {formatCurrency(bookie.balance || 0)}
-                                  </span>
+                    <PopoverContent
+                      className="w-[300px] p-0"
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
+                      <div className="flex flex-col" style={{ maxHeight: '350px', height: '350px' }}>
+                        <div className="p-3 border-b flex-shrink-0 bg-popover">
+                          <Input
+                            placeholder="Buscar casa de apostas..."
+                            className="h-9"
+                          />
+                        </div>
+                        <div
+                          className="flex-1 p-2"
+                          style={{
+                            overflowY: 'scroll',
+                            WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-y',
+                            overscrollBehavior: 'contain',
+                            minHeight: 0
+                          } as React.CSSProperties}
+                          onWheel={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          {bookies.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-muted-foreground">
+                              Nenhuma casa encontrada.
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              {bookies.map((bookie) => (
+                                <div
+                                  key={bookie.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    field.onChange(bookie.name);
+                                    setSelectedBookie(bookie);
+                                    setBookieOpen(false);
+                                  }}
+                                  className="flex items-center gap-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "h-4 w-4",
+                                      field.value === bookie.name ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex items-center justify-between flex-1">
+                                    <span className="text-sm">{bookie.name}</span>
+                                    <span className="text-xs text-muted-foreground ml-4">
+                                      {formatCurrency(bookie.balance || 0)}
+                                    </span>
+                                  </div>
                                 </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </PopoverContent>
                   </Popover>
                   {selectedBookie && (
@@ -559,7 +609,7 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                   {hasBonus ? "Ativado" : "Desativado"}
                 </Button>
               </div>
-              
+
               {hasBonus && (
                 <FormField
                   control={form.control}
@@ -589,23 +639,23 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                 <Zap className="h-4 w-4" />
                 Turbo
               </FormLabel>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {turboOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  type="button"
-                  variant={selectedTurbo === option.value ? "default" : "outline"}
-                  size="default"
-                  onClick={() => setSelectedTurbo(option.value)}
-                  className={cn(
-                    "transition-all font-semibold text-xs sm:text-sm",
-                    selectedTurbo === option.value && "ring-2 ring-primary ring-offset-2"
-                  )}
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {turboOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedTurbo === option.value ? "default" : "outline"}
+                    size="default"
+                    onClick={() => setSelectedTurbo(option.value)}
+                    className={cn(
+                      "transition-all font-semibold text-xs sm:text-sm",
+                      selectedTurbo === option.value && "ring-2 ring-primary ring-offset-2"
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -645,33 +695,59 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[300px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Buscar torneio..." />
-                          <CommandList>
-                            <CommandEmpty>Nenhum torneio encontrado.</CommandEmpty>
-                            <CommandGroup>
-                              {torneios.map((torneio) => (
-                                <CommandItem
-                                  key={torneio}
-                                  value={torneio}
-                                  onSelect={() => {
-                                    field.onChange(torneio);
-                                    setTournamentOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      field.value === torneio ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {torneio}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
+                      <PopoverContent
+                        className="w-[300px] p-0"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <div className="flex flex-col" style={{ maxHeight: '350px', height: '350px' }}>
+                          <div className="p-3 border-b flex-shrink-0 bg-popover">
+                            <Input
+                              placeholder="Buscar torneio..."
+                              className="h-9"
+                            />
+                          </div>
+                          <div
+                            className="flex-1 p-2"
+                            style={{
+                              overflowY: 'scroll',
+                              WebkitOverflowScrolling: 'touch',
+                              touchAction: 'pan-y',
+                              overscrollBehavior: 'contain',
+                              minHeight: 0
+                            } as React.CSSProperties}
+                            onWheel={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
+                            {torneios.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                Nenhum torneio encontrado.
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                {torneios.map((torneio) => (
+                                  <div
+                                    key={torneio}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      field.onChange(torneio);
+                                      setTournamentOpen(false);
+                                    }}
+                                    className="flex items-center gap-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "h-4 w-4",
+                                        field.value === torneio ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className="text-sm">{torneio}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />

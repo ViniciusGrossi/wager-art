@@ -11,17 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { bookiesService } from "@/services/bookies";
 import { apostasService } from "@/services/apostas";
 import type { Bookie, Aposta, ApostaFormData } from "@/types/betting";
 import { formatCurrency, cn } from "@/lib/utils";
-import { CalendarIcon, Wallet, Zap, Gift, Info, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Wallet, Zap, Gift, Info, Edit, Trash2, AlertTriangle, X, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const formSchema = z.object({
-  categoria: z.string().min(1, "Categoria é obrigatória"),
+  categoria: z.array(z.string()).min(1, "Selecione ao menos uma categoria"),
   tipo_aposta: z.string().min(1, "Tipo de aposta é obrigatório"),
   casa_de_apostas: z.string().min(1, "Casa de apostas é obrigatória"),
   valor_apostado: z.number().min(0.01, "Valor mínimo é R$ 0,01"),
@@ -88,6 +90,13 @@ const torneios = [
   "Süper Lig (Turquia)",
 ];
 
+const turboOptions = [
+  { label: "Sem Turbo", value: 0 },
+  { label: "+25%", value: 0.25 },
+  { label: "+30%", value: 0.30 },
+  { label: "+50%", value: 0.50 },
+];
+
 interface EditApostaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -98,6 +107,7 @@ interface EditApostaDialogProps {
 export function EditApostaDialog({ open, onOpenChange, aposta, onSuccess }: EditApostaDialogProps) {
   const [bookies, setBookies] = useState<Bookie[]>([]);
   const [selectedBookie, setSelectedBookie] = useState<Bookie | null>(null);
+  const [categorySearch, setCategorySearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasBonus, setHasBonus] = useState(false);
   const [selectedTurbo, setSelectedTurbo] = useState(0);
@@ -106,7 +116,7 @@ export function EditApostaDialog({ open, onOpenChange, aposta, onSuccess }: Edit
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      categoria: "",
+      categoria: [],
       tipo_aposta: "",
       casa_de_apostas: "",
       valor_apostado: undefined as any,
@@ -121,13 +131,22 @@ export function EditApostaDialog({ open, onOpenChange, aposta, onSuccess }: Edit
   });
 
   useEffect(() => {
+    form.setValue("turbo", selectedTurbo);
+  }, [selectedTurbo]);
+
+  useEffect(() => {
     if (open) loadBookies();
   }, [open]);
 
   useEffect(() => {
     if (aposta) {
+      // Parse categorias: converte string separada por vírgula para array
+      const categoriasArray = aposta.categoria
+        ? aposta.categoria.split(',').map(c => c.trim()).filter(Boolean)
+        : [];
+
       form.reset({
-        categoria: aposta.categoria || "",
+        categoria: categoriasArray,
         tipo_aposta: aposta.tipo_aposta || "",
         casa_de_apostas: aposta.casa_de_apostas || "",
         valor_apostado: aposta.valor_apostado || undefined as any,
@@ -167,7 +186,7 @@ export function EditApostaDialog({ open, onOpenChange, aposta, onSuccess }: Edit
     setIsLoading(true);
     try {
       const dto: ApostaFormData = {
-        categoria: data.categoria,
+        categoria: data.categoria.join(", "), // Converte array para string
         tipo_aposta: data.tipo_aposta,
         casa_de_apostas: data.casa_de_apostas,
         valor_apostado: data.valor_apostado,
@@ -229,30 +248,127 @@ export function EditApostaDialog({ open, onOpenChange, aposta, onSuccess }: Edit
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={form.control}
                 name="categoria"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categorias.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const filteredCategorias = categorias.filter((cat) =>
+                    cat.toLowerCase().includes(categorySearch.toLowerCase())
+                  );
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Categorias</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                field.value.length === 0 && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value.length === 0
+                                ? "Selecione categorias"
+                                : `${field.value.length} selecionada(s)`}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-full p-0 z-50"
+                          align="start"
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <div className="flex flex-col" style={{ maxHeight: '350px', height: '350px' }}>
+                            <div className="p-3 border-b flex-shrink-0 bg-popover">
+                              <Input
+                                placeholder="Buscar categoria..."
+                                value={categorySearch}
+                                onChange={(e) => setCategorySearch(e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                            <div
+                              className="flex-1 p-2"
+                              style={{
+                                overflowY: 'scroll',
+                                WebkitOverflowScrolling: 'touch',
+                                touchAction: 'pan-y',
+                                overscrollBehavior: 'contain',
+                                minHeight: 0
+                              } as React.CSSProperties}
+                              onWheel={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              {filteredCategorias.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  Nenhuma categoria encontrada.
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  {filteredCategorias.map((cat) => (
+                                    <div
+                                      key={cat}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const currentValue = field.value || [];
+                                        const newValue = currentValue.includes(cat)
+                                          ? currentValue.filter((v) => v !== cat)
+                                          : [...currentValue, cat];
+                                        field.onChange(newValue);
+                                      }}
+                                      className="flex items-center space-x-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
+                                    >
+                                      <Checkbox
+                                        checked={field.value?.includes(cat)}
+                                        onCheckedChange={(checked) => {
+                                          const currentValue = field.value || [];
+                                          const newValue = checked
+                                            ? [...currentValue, cat]
+                                            : currentValue.filter((v) => v !== cat);
+                                          field.onChange(newValue);
+                                        }}
+                                      />
+                                      <span className="flex-1 text-sm">{cat}</span>
+                                      {field.value?.includes(cat) && (
+                                        <Check className="h-4 w-4 text-primary" />
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      {field.value.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {field.value.map((cat) => (
+                            <Badge
+                              key={cat}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {cat}
+                              <X
+                                className="h-3 w-3 ml-1 cursor-pointer"
+                                onClick={() => {
+                                  const newValue = field.value.filter((v) => v !== cat);
+                                  field.onChange(newValue);
+                                }}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
@@ -434,6 +550,72 @@ export function EditApostaDialog({ open, onOpenChange, aposta, onSuccess }: Edit
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Bônus Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <FormLabel className="flex items-center gap-2">
+                  <Gift className="h-4 w-4" />
+                  Bônus
+                </FormLabel>
+                <Button
+                  type="button"
+                  variant={hasBonus ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setHasBonus(!hasBonus)}
+                  className="transition-all"
+                >
+                  {hasBonus ? "Ativado" : "Desativado"}
+                </Button>
+              </div>
+
+              {hasBonus && (
+                <FormField
+                  control={form.control}
+                  name="bonus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Valor do bônus"
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* Turbo Buttons */}
+            <div className="space-y-3">
+              <FormLabel className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Turbo
+              </FormLabel>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {turboOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selectedTurbo === option.value ? "default" : "outline"}
+                    size="default"
+                    onClick={() => setSelectedTurbo(option.value)}
+                    className={cn(
+                      "transition-all font-semibold text-xs sm:text-sm",
+                      selectedTurbo === option.value && "ring-2 ring-primary ring-offset-2"
+                    )}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">

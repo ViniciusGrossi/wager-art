@@ -1,0 +1,1693 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BetTracker - Análises Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .metric-card {
+            background: linear-gradient(145deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: visible;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .metric-card:hover::before {
+            left: 100%;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.6);
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: linear-gradient(180deg, #6366f1, #8b5cf6);
+            transition: height 0.3s ease;
+        }
+
+        .nav-item.active::before,
+        .nav-item:hover::before {
+            height: 100%;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.2), transparent);
+            border-right: 2px solid #6366f1;
+        }
+
+        .tab-button {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(55, 65, 81, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(75, 85, 99, 0.7);
+            transform: translateY(-2px);
+        }
+
+        .chart-container {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .floating-header {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-icon {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-excellent {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .status-good {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .status-poor {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .filter-section {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.8));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .insight-card {
+            background: linear-gradient(145deg, rgba(6, 182, 212, 0.1), rgba(99, 102, 241, 0.1));
+            border-left: 4px solid #06b6d4;
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateX(8px);
+            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.2);
+        }
+
+        .profit-positive { color: #10b981; }
+        .profit-negative { color: #ef4444; }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .ts-control, .ts-dropdown { 
+            background-color: #374151 !important; 
+            color: #fff !important; 
+            border-radius: 0.5rem !important; 
+            border: 1px solid #4b5563 !important;
+            width: 100% !important;
+        }
+
+        .ts-dropdown .option:hover { 
+            background: rgba(99, 102, 241, 0.3) !important; 
+        }
+
+        /* SISTEMA DE TOOLTIPS CORRIGIDO */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip-portal {
+            position: fixed;
+            z-index: 999999;
+            pointer-events: none;
+        }
+
+        .tooltip-content {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 280px;
+            backdrop-filter: blur(10px);
+            font-size: 0.875rem;
+            line-height: 1.4;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .tooltip-portal.show .tooltip-content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            border-radius: 50%;
+            cursor: help;
+            transition: all 0.3s ease;
+            margin-left: 8px;
+        }
+
+        .info-icon:hover {
+            background: rgba(99, 102, 241, 0.3);
+            transform: scale(1.1);
+        }
+
+        .info-icon i {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Estilos para tabelas */
+        .data-table {
+            overflow-x: auto;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background: rgba(15, 23, 42, 0.8);
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #d1d5db;
+        }
+        
+        .data-table tbody tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .heatmap-cell {
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            border-radius: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <!-- Sidebar -->
+    <div class="fixed left-0 top-0 h-full w-72 sidebar z-40">
+        <div class="p-8">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold gradient-text">BetTracker</h1>
+                    <p class="text-sm text-slate-400 font-medium">Analytics Pro</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="px-6 pb-6 space-y-2">
+            <a href="home.html" class="nav-item flex items-center space-x-4 px-6 py-4 rounded-2xl text-slate-300 hover:text-white transition-all">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <span class="font-medium">Início</span>
+            </a>
+            <a href="Apostas.html" class="nav-item flex items-center space-x-4 px-6 py-4 rounded-2xl text-slate-300 hover:text-white transition-all">
+                <i data-lucide="target" class="w-5 h-5"></i>
+                <span class="font-medium">Apostas</span>
+            </a>
+            <a href="resultados.html" class="nav-item flex items-center space-x-3 px-6 py-4 rounded-2xl text-slate-300 hover:text-white transition-all">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                <span class="font-medium">Resultados</span>
+            </a>
+            <a href="analises.html" class="nav-item active flex items-center space-x-3 px-6 py-4 rounded-2xl text-white transition-all">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                <span class="font-medium">Análises</span>
+            </a>
+            <a href="ia_insights.html" class="nav-item flex items-center space-x-3 px-6 py-4 rounded-2xl text-slate-300 hover:text-white transition-all">
+                <i data-lucide="message-circle" class="w-5 h-5"></i>
+                <span class="font-medium">IA Insights</span>
+            </a>
+            <a href="banca.html" class="nav-item flex items-center space-x-4 px-6 py-4 rounded-2xl text-slate-300 hover:text-white transition-all">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+                <span class="font-medium">Gestão de Banca</span>
+            </a>
+            <a href="#" class="nav-item flex items-center space-x-4 px-6 py-4 rounded-2xl text-slate-300 hover:text-white transition-all">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+                <span class="font-medium">Configurações</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-72 min-h-screen">
+        <!-- Header -->
+        <header class="floating-header sticky top-0 z-30 px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-4xl font-bold gradient-text mb-2">Análises Avançadas</h2>
+                    <p class="text-slate-400 text-lg">Dashboard inteligente com insights personalizados para suas apostas</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="loading-indicator" class="loading-spinner hidden"></div>
+                    <div class="pulse-dot w-3 h-3 bg-green-400 rounded-full"></div>
+                    <button id="refresh-data" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 flex items-center space-x-3 shadow-lg hover:shadow-xl">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        <span class="font-medium">Atualizar</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-8 space-y-8">
+            <!-- Navegação por Abas -->
+            <div class="flex flex-wrap gap-3 tab-buttons">
+                <button class="tab-button active px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="dashboard">
+                    <i data-lucide="home" class="w-5 h-5 mr-3 inline"></i>
+                    Dashboard
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="performance">
+                    <i data-lucide="zap" class="w-5 h-5 mr-3 inline"></i>
+                    Performance
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="casas">
+                    <i data-lucide="building" class="w-5 h-5 mr-3 inline"></i>
+                    Casas de Apostas
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="categorias">
+                    <i data-lucide="trophy" class="w-5 h-5 mr-3 inline"></i>
+                    Categorias
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="odds">
+                    <i data-lucide="percent" class="w-5 h-5 mr-3 inline"></i>
+                    Análise de Odds
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="risk">
+                    <i data-lucide="shield" class="w-5 h-5 mr-3 inline"></i>
+                    Análise de Risco
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="temporal">
+                    <i data-lucide="calendar" class="w-5 h-5 mr-3 inline"></i>
+                    Análise Temporal
+                </button>
+                <button class="tab-button px-8 py-4 rounded-2xl font-semibold transition-all duration-300" data-tab="patterns">
+                    <i data-lucide="brain" class="w-5 h-5 mr-3 inline"></i>
+                    Padrões & Tendências
+                </button>
+            </div>
+
+            <!-- Filtros Inteligentes -->
+            <div class="filter-section rounded-3xl p-6 mb-6">
+                <h3 class="text-xl font-bold mb-6 flex items-center">
+                    <div class="metric-icon p-2 rounded-xl mr-3">
+                        <i data-lucide="filter" class="w-5 h-5"></i>
+                    </div>
+                    Filtros Inteligentes
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Data Inicial</label>
+                        <input type="date" id="filter-date-start" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Data Final</label>
+                        <input type="date" id="filter-date-end" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Casa de Apostas</label>
+                        <select id="filter-house" class="w-full" multiple></select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Tipo de Aposta</label>
+                        <select id="filter-type" class="w-full" multiple></select>
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Categoria/Torneio</label>
+                        <select id="filter-tournament" class="w-full" multiple></select>
+                    </div>
+                    <div class="col-span-1 flex items-end">
+                        <button id="btn-clear-filters" class="w-full px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl text-slate-300 hover:text-white transition-all duration-300">
+                            Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Principal -->
+            <div id="tab-dashboard" class="tab-content active space-y-8">
+                <!-- Métricas Principais -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-emerald-400">
+                                <i data-lucide="dollar-sign" class="w-8 h-8"></i>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400 font-medium uppercase tracking-wider flex items-center justify-end">
+                                    Total Investido
+                                    <div class="tooltip" data-tooltip="Total Apostado|Soma de todos os valores investidos em apostas no período selecionado">
+                                        <div class="info-icon">
+                                            <i data-lucide="info" class="w-3 h-3"></i>
+                                        </div>
+                                    </div>
+                                </p>
+                                <div class="status-indicator status-excellent mt-1" id="metric-total-variation">-</div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="metric-total-apostado">R$ 0,00</p>
+                        <p class="text-slate-400 font-medium">Total Apostado</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-blue-400">
+                                <i data-lucide="trending-up" class="w-8 h-8"></i>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400 font-medium uppercase tracking-wider flex items-center justify-end">
+                                    Meta: 5%+
+                                    <div class="tooltip" data-tooltip="ROI - Return on Investment|Percentual de retorno sobre o investimento. Valores positivos indicam lucro">
+                                        <div class="info-icon">
+                                            <i data-lucide="info" class="w-3 h-3"></i>
+                                        </div>
+                                    </div>
+                                </p>
+                                <div class="status-indicator status-good mt-1" id="metric-roi-status">-</div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="metric-roi">0%</p>
+                        <p class="text-slate-400 font-medium">ROI</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="badge-dollar-sign" class="w-8 h-8"></i>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400 font-medium uppercase tracking-wider flex items-center justify-end">
+                                    Maior Ganho
+                                    <div class="tooltip" data-tooltip="Lucro/Prejuízo|Resultado financeiro líquido. Soma dos ganhos menos perdas">
+                                        <div class="info-icon">
+                                            <i data-lucide="info" class="w-3 h-3"></i>
+                                        </div>
+                                    </div>
+                                </p>
+                                <p class="text-sm font-bold text-emerald-400 mt-1" id="metric-maior-ganho">R$ 0,00</p>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="metric-lucro">R$ 0,00</p>
+                        <p class="text-slate-400 font-medium">Lucro/Prejuízo</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="activity" class="w-8 h-8"></i>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400 font-medium uppercase tracking-wider flex items-center justify-end">
+                                    Meta: 60%+
+                                    <div class="tooltip" data-tooltip="Taxa de Acerto|Percentual de apostas vencedoras em relação ao total">
+                                        <div class="info-icon">
+                                            <i data-lucide="info" class="w-3 h-3"></i>
+                                        </div>
+                                    </div>
+                                </p>
+                                <div class="status-indicator status-excellent mt-1" id="metric-taxa-status">-</div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="metric-taxa-acerto">0%</p>
+                        <p class="text-slate-400 font-medium">Taxa de Acerto</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos Principais -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="line-chart" class="w-5 h-5"></i>
+                            </div>
+                            Evolução do Retorno Acumulado
+                            <div class="tooltip" data-tooltip="Retorno Acumulado|Mostra a evolução do seu capital ao longo do tempo, considerando ganhos e perdas">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-retorno-acumulado" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                            </div>
+                            Evolução do Lucro Mensal
+                            <div class="tooltip" data-tooltip="Lucro Mensal|Resultado financeiro consolidado por mês">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-lucro-mensal" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas Rápidas -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="glass-card rounded-3xl p-8">
+                        <h4 class="text-xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="calendar" class="w-5 h-5"></i>
+                            </div>
+                            Atividade
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Total de Apostas:</span>
+                                <span class="text-xl font-bold" id="stat-total-apostas">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Apostas/Dia (média):</span>
+                                <span class="text-xl font-bold" id="stat-apostas-dia">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Dias ativos:</span>
+                                <span class="text-xl font-bold" id="stat-dias-ativos">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-8">
+                        <h4 class="text-xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="target" class="w-5 h-5"></i>
+                            </div>
+                            Odds
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Odd Média:</span>
+                                <span class="text-xl font-bold" id="stat-odd-media">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Odd Mais Alta:</span>
+                                <span class="text-xl font-bold text-emerald-400" id="stat-odd-alta">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Odd Mais Baixa:</span>
+                                <span class="text-xl font-bold text-red-400" id="stat-odd-baixa">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-8">
+                        <h4 class="text-xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                            </div>
+                            Sequências
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Maior Seq. Vitórias:</span>
+                                <span class="text-xl font-bold text-emerald-400" id="stat-seq-vitorias">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Maior Seq. Derrotas:</span>
+                                <span class="text-xl font-bold text-red-400" id="stat-seq-derrotas">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Sequência Atual:</span>
+                                <span class="text-xl font-bold" id="stat-seq-atual">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distribuição de Valores -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="bar-chart" class="w-5 h-5"></i>
+                            </div>
+                            Distribuição de Valores Apostados
+                            <div class="tooltip" data-tooltip="Distribuição de Valores|Mostra como seus investimentos estão distribuídos por faixas de valor">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-distribuicao-valores" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                            </div>
+                            Lucratividade por Tipo
+                            <div class="tooltip" data-tooltip="Lucratividade por Tipo|Análise de qual tipo de aposta está gerando mais lucro">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-lucratividade-tipo" width="300" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Insights -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6 flex items-center">
+                        <div class="metric-icon p-2 rounded-xl mr-3">
+                            <i data-lucide="brain" class="w-5 h-5"></i>
+                        </div>
+                        Insights e Recomendações IA
+                    </h3>
+                    <div id="insights-container" class="space-y-4">
+                        <div class="insight-card p-6 rounded-2xl">
+                            <div class="flex items-start space-x-4">
+                                <div class="metric-icon p-2 rounded-xl">
+                                    <i data-lucide="lightbulb" class="w-5 h-5 text-cyan-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white mb-2">Aguardando dados</h4>
+                                    <p class="text-slate-300">Adicione apostas para gerar insights personalizados sobre sua performance.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Performance -->
+            <div id="tab-performance" class="tab-content space-y-8">
+                <!-- Métricas de Performance -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-blue-400">
+                                <i data-lucide="percent" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Yield|Rentabilidade média por aposta, calculada como lucro total dividido pelo valor total apostado">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="perf-yield">0%</p>
+                        <p class="text-slate-400 font-medium">Yield</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-green-400">
+                                <i data-lucide="trending-up" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Consistência ROI|Mede a regularidade dos retornos positivos ao longo do tempo">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="perf-roi-consistencia">0%</p>
+                        <p class="text-slate-400 font-medium">Consistência ROI</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="target" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Strike Rate|Taxa de sucesso em apostas de odds altas (acima de 2.0)">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="perf-strike-rate">0%</p>
+                        <p class="text-slate-400 font-medium">Strike Rate</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="calendar" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Apostas/Mês|Volume médio mensal de atividade de apostas">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="perf-apostas-mes">0</p>
+                        <p class="text-slate-400 font-medium">Apostas/Mês</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos de Performance -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            Tendência de Performance
+                            <div class="tooltip" data-tooltip="Tendência de Performance|Evolução dos seus indicadores de performance ao longo do tempo">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-tendencia-performance" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                            </div>
+                            Evolução do Lucro Diário
+                            <div class="tooltip" data-tooltip="Lucro Diário|Resultado financeiro de cada dia. Barras verdes = lucro, vermelhas = prejuízo">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-lucro-diario" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análise Avançada -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="glass-card rounded-3xl p-8">
+                        <h4 class="text-xl font-bold mb-6">Análise Temporal</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Melhor Mês:</span>
+                                <span class="text-xl font-bold text-green-400" id="perf-melhor-mes">-</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Pior Mês:</span>
+                                <span class="text-xl font-bold text-red-400" id="perf-pior-mes">-</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Mês Atual:</span>
+                                <span class="text-xl font-bold" id="perf-mes-atual">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-8">
+                        <h4 class="text-xl font-bold mb-6">Otimização</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Odd Ótima:</span>
+                                <span class="text-xl font-bold text-blue-400" id="perf-odd-otima">2.00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Volume Ideal:</span>
+                                <span class="text-xl font-bold text-blue-400" id="perf-volume-ideal">R$ 0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">ROI Projetado:</span>
+                                <span class="text-xl font-bold text-green-400" id="perf-roi-projetado">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-3xl p-8">
+                        <h4 class="text-xl font-bold mb-6">Eficiência</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Precisão:</span>
+                                <span class="text-xl font-bold" id="perf-precisao">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">Recall:</span>
+                                <span class="text-xl font-bold" id="perf-recall">0%</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 font-medium">F1-Score:</span>
+                                <span class="text-xl font-bold" id="perf-f1-score">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicadores-Chave de Performance -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Indicadores-Chave de Performance</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-blue-400 flex items-center justify-center" id="kpi-sharpe">
+                                0.00
+                                <div class="tooltip" data-tooltip="Sharpe Ratio|Mede o retorno ajustado ao risco. Valores acima de 1.0 são considerados bons">
+                                    <div class="info-icon ml-2">
+                                        <i data-lucide="info" class="w-3 h-3"></i>
+                                    </div>
+                                </div>
+                            </p>
+                            <p class="text-sm text-slate-400 mt-2">Sharpe Ratio</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-green-400 flex items-center justify-center" id="kpi-sortino">
+                                0.00
+                                <div class="tooltip" data-tooltip="Sortino Ratio|Similar ao Sharpe, mas considera apenas a volatilidade negativa (downside deviation)">
+                                    <div class="info-icon ml-2">
+                                        <i data-lucide="info" class="w-3 h-3"></i>
+                                    </div>
+                                </div>
+                            </p>
+                            <p class="text-sm text-slate-400 mt-2">Sortino Ratio</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-purple-400 flex items-center justify-center" id="kpi-calmar">
+                                0.00
+                                <div class="tooltip" data-tooltip="Calmar Ratio|Retorno anualizado dividido pelo drawdown máximo. Indica qualidade dos retornos">
+                                    <div class="info-icon ml-2">
+                                        <i data-lucide="info" class="w-3 h-3"></i>
+                                    </div>
+                                </div>
+                            </p>
+                            <p class="text-sm text-slate-400 mt-2">Calmar Ratio</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-3xl font-bold text-yellow-400 flex items-center justify-center" id="kpi-win-loss">
+                                0.00
+                                <div class="tooltip" data-tooltip="Win/Loss Ratio|Proporção entre vitórias e derrotas. Valores acima de 1.0 indicam mais vitórias">
+                                    <div class="info-icon ml-2">
+                                        <i data-lucide="info" class="w-3 h-3"></i>
+                                    </div>
+                                </div>
+                            </p>
+                            <p class="text-sm text-slate-400 mt-2">Win/Loss Ratio</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Casas de Apostas -->
+            <div id="tab-casas" class="tab-content space-y-8">
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6 flex items-center">
+                        <div class="metric-icon p-2 rounded-xl mr-3">
+                            <i data-lucide="building" class="w-5 h-5"></i>
+                        </div>
+                        Análise Comparativa de Casas
+                    </h3>
+                    
+                    <div class="data-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Casa de Apostas</th>
+                                    <th>Total Apostas</th>
+                                    <th>Taxa Acerto</th>
+                                    <th>ROI</th>
+                                    <th>Lucro Total</th>
+                                    <th>Odd Média</th>
+                                    <th>Bônus Usado</th>
+                                    <th>Avaliação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-ranking-casas">
+                                <tr>
+                                    <td colspan="8" class="text-center text-slate-500 py-8">Carregando dados...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gráficos de Casas -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Performance por Casa</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-performance-casa" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">ROI por Casa</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-roi-casa" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nova seção de métricas -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Volume vs Performance</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-volume-performance" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Top Casas - Métricas</h3>
+                        <div id="top-casas-metricas" class="space-y-4">
+                            <!-- Será preenchido dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Melhores Mercados por Casa -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Melhores Mercados por Casa</h3>
+                    <div id="mercados-casa-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="text-center text-slate-500">Carregando análise de mercados...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nova Aba Categorias -->
+            <div id="tab-categorias" class="tab-content space-y-8">
+                <!-- Métricas de Categorias -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="trophy" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="categoria-mais-lucrativo">-</p>
+                        <p class="text-slate-400 font-medium">Categoria Mais Lucrativo</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-green-400">
+                                <i data-lucide="percent" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="categoria-melhor-taxa">0%</p>
+                        <p class="text-slate-400 font-medium">Melhor Taxa de Acerto</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-blue-400">
+                                <i data-lucide="trending-up" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="categoria-melhor-roi">0%</p>
+                        <p class="text-slate-400 font-medium">Melhor ROI</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="award" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="categoria-ativos">0</p>
+                        <p class="text-slate-400 font-medium">Categorias Ativas</p>
+                    </div>
+                </div>
+
+                <!-- Tabela de Categorias -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Análise de Categorias</h3>
+                    <div class="data-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Categoria</th>
+                                    <th>Total Apostas</th>
+                                    <th>Taxa Acerto</th>
+                                    <th>ROI</th>
+                                    <th>Lucro Total</th>
+                                    <th>Odd Média</th>
+                                    <th>Tendência</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-torneios">
+                                <tr>
+                                    <td colspan="7" class="text-center text-slate-500 py-8">Carregando dados...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gráficos de Torneios -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Performance por Torneio</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-torneios-performance" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Distribuição de Apostas</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-torneios-distribuicao" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análise de Esportes -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Análise por Esporte</h3>
+                    <div id="analise-esportes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Histórico de Torneios -->
+                <div class="chart-container rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Evolução Temporal por Torneio</h3>
+                    <div class="h-80 flex items-center justify-center">
+                        <canvas id="chart-torneios-evolucao" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Análise de Odds CORRIGIDA -->
+            <div id="tab-odds" class="tab-content space-y-8">
+                <!-- Métricas de Odds ORIGINAIS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-blue-400">
+                                <i data-lucide="target" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Value Bets|Percentual de apostas com valor esperado positivo (ROI superior a 10%)">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="odds-value-bet">0%</p>
+                        <p class="text-slate-400 font-medium">Value Bets</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-green-400">
+                                <i data-lucide="check-circle" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Acerto Odds Baixas|Taxa de acerto em apostas com odds entre 1.00 e 1.50">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="odds-acerto-baixas">0%</p>
+                        <p class="text-slate-400 font-medium">Acerto Odds Baixas</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="zap" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Acerto Odds Altas|Taxa de acerto em apostas com odds acima de 3.00">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="odds-acerto-altas">0%</p>
+                        <p class="text-slate-400 font-medium">Acerto Odds Altas</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Odd Média Vencedora|Valor médio das odds nas apostas ganhas">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="odds-media-ganhadoras">0.00</p>
+                        <p class="text-slate-400 font-medium">Odd Média Vencedora</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos ORIGINAIS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Relação Odd vs Performance</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-odd-performance" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Distribuição de Odds</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-distribuicao-odds" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOVAS ANÁLISES AVANÇADAS - ESTRUTURA CORRETA -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6 flex items-center">
+                        <div class="metric-icon p-2 rounded-xl mr-3">
+                            <i data-lucide="target" class="w-5 h-5"></i>
+                        </div>
+                        Análises Avançadas de Odds
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <div class="flex items-center justify-center mb-4">
+                                <div class="metric-icon p-3 rounded-xl text-emerald-400">
+                                    <i data-lucide="crosshair" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-2">Sweet Spot de Odds</p>
+                            <p class="text-2xl font-bold text-emerald-400" id="odds-sweet-spot-display">-</p>
+                            <p class="text-xs text-slate-500 mt-2">Faixa mais lucrativa</p>
+                        </div>
+                        
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <div class="flex items-center justify-center mb-4">
+                                <div class="metric-icon p-3 rounded-xl text-blue-400">
+                                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-2">Movimento de Odds</p>
+                            <p class="text-lg font-bold text-blue-400" id="odds-movimento-display">-</p>
+                            <p class="text-xs text-slate-500 mt-2">Performance por movimento</p>
+                        </div>
+                        
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <div class="flex items-center justify-center mb-4">
+                                <div class="metric-icon p-3 rounded-xl text-purple-400">
+                                    <i data-lucide="clock" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-2">Timing Insight</p>
+                            <p class="text-sm font-bold text-purple-400" id="odds-timing-display">-</p>
+                            <p class="text-xs text-slate-500 mt-2">Recomendação de timing</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOVOS GRÁFICOS AVANÇADOS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="target" class="w-5 h-5"></i>
+                            </div>
+                            Sweet Spot Analysis
+                            <div class="tooltip" data-tooltip="Sweet Spot Analysis|Identifica as faixas de odds mais lucrativas baseado no ROI histórico">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-sweet-spot-odds" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6 flex items-center">
+                            <div class="metric-icon p-2 rounded-xl mr-3">
+                                <i data-lucide="activity" class="w-5 h-5"></i>
+                            </div>
+                            Movimento de Odds
+                            <div class="tooltip" data-tooltip="Movimento de Odds|Analisa como a variação das odds impacta sua performance">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-movimento-odds" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Eficiência por Faixa de Odd ORIGINAL -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Eficiência por Faixa de Odd</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <p class="text-sm text-slate-400 mb-2">1.00 - 1.50</p>
+                            <p class="text-3xl font-bold text-green-400" id="faixa-1-15">0%</p>
+                            <p class="text-xs text-slate-500 mt-2">Taxa de Acerto</p>
+                        </div>
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <p class="text-sm text-slate-400 mb-2">1.51 - 2.00</p>
+                            <p class="text-3xl font-bold text-blue-400" id="faixa-15-2">0%</p>
+                            <p class="text-xs text-slate-500 mt-2">Taxa de Acerto</p>
+                        </div>
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <p class="text-sm text-slate-400 mb-2">2.01 - 3.00</p>
+                            <p class="text-3xl font-bold text-purple-400" id="faixa-2-3">0%</p>
+                            <p class="text-xs text-slate-500 mt-2">Taxa de Acerto</p>
+                        </div>
+                        <div class="text-center p-6 bg-slate-800/50 rounded-2xl">
+                            <p class="text-sm text-slate-400 mb-2">3.00+</p>
+                            <p class="text-3xl font-bold text-yellow-400" id="faixa-3-plus">0%</p>
+                            <p class="text-xs text-slate-500 mt-2">Taxa de Acerto</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Análise de Risco -->
+            <div id="tab-risk" class="tab-content space-y-8">
+                <!-- Métricas de Risco -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-red-400">
+                                <i data-lucide="trending-down" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Max Drawdown|Maior queda percentual do saldo do pico até o vale mais baixo">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2 text-red-400" id="risk-drawdown">0%</p>
+                        <p class="text-slate-400 font-medium">Max Drawdown</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="activity" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Volatilidade|Medida de variação dos resultados. Valores altos indicam maior instabilidade">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="risk-volatility">0%</p>
+                        <p class="text-slate-400 font-medium">Volatilidade</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="shield" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Score de Risco|Avaliação geral de risco de 0-100. Valores baixos indicam menor risco">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="risk-score">0</p>
+                        <p class="text-slate-400 font-medium">Score de Risco</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-green-400">
+                                <i data-lucide="calculator" class="w-8 h-8"></i>
+                            </div>
+                            <div class="tooltip" data-tooltip="Kelly %|Percentual ideal do bankroll para apostar segundo o Critério de Kelly">
+                                <div class="info-icon">
+                                    <i data-lucide="info" class="w-3 h-3"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-4xl font-bold mb-2 text-green-400" id="risk-kelly">0%</p>
+                        <p class="text-slate-400 font-medium">Kelly %</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos de Risco -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Análise de Drawdown</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-drawdown" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Relação Risco-Retorno</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-risco-retorno" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas Avançadas de Risco -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Métricas Avançadas de Risco</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div>
+                            <p class="text-sm text-slate-400">Value at Risk (95%)</p>
+                            <p class="text-2xl font-bold text-red-400" id="var-95">R$ 0</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">Expected Shortfall</p>
+                            <p class="text-2xl font-bold text-orange-400" id="expected-shortfall">R$ 0</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">Recovery Time</p>
+                            <p class="text-2xl font-bold text-yellow-400" id="recovery-time">0 dias</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">Risk-Adjusted Return</p>
+                            <p class="text-2xl font-bold text-green-400" id="risk-adjusted-return">0%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Análise Temporal -->
+            <div id="tab-temporal" class="tab-content space-y-8">
+                <!-- Métricas Temporais -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-green-400">
+                                <i data-lucide="calendar-check" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="melhor-dia-semana">-</p>
+                        <p class="text-slate-400 font-medium">Melhor Dia da Semana</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-blue-400">
+                                <i data-lucide="clock" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="melhor-horario">-</p>
+                        <p class="text-slate-400 font-medium">Melhor Horário</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="calendar" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="melhor-mes-ano">-</p>
+                        <p class="text-slate-400 font-medium">Melhor Mês</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="trending-up" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="streak-atual-dias">0</p>
+                        <p class="text-slate-400 font-medium">Dias Consecutivos</p>
+                    </div>
+                </div>
+
+                <!-- Heatmap de Performance -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Heatmap de Performance Mensal</h3>
+                    <div id="heatmap-mensal" class="overflow-x-auto">
+                        <div class="text-center text-slate-500">Carregando heatmap...</div>
+                    </div>
+                </div>
+
+                <!-- Gráficos Temporais -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Performance por Dia da Semana</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-dia-semana" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container rounded-3xl p-8">
+                        <h3 class="text-2xl font-bold mb-6">Evolução Mensal</h3>
+                        <div class="h-80 flex items-center justify-center">
+                            <canvas id="chart-evolucao-mensal" width="400" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aba Padrões & Tendências -->
+            <div id="tab-patterns" class="tab-content space-y-8">
+                <!-- Indicadores de Padrões -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-blue-400">
+                                <i data-lucide="git-branch" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="pattern-consistency">0%</p>
+                        <p class="text-slate-400 font-medium">Consistência</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-green-400">
+                                <i data-lucide="trending-up" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="pattern-momentum">-</p>
+                        <p class="text-slate-400 font-medium">Momentum</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-purple-400">
+                                <i data-lucide="repeat" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="pattern-cycle">-</p>
+                        <p class="text-slate-400 font-medium">Ciclo Dominante</p>
+                    </div>
+
+                    <div class="metric-card rounded-3xl p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="metric-icon p-4 rounded-2xl text-yellow-400">
+                                <i data-lucide="compass" class="w-8 h-8"></i>
+                            </div>
+                        </div>
+                        <p class="text-2xl font-bold mb-2" id="pattern-direction">-</p>
+                        <p class="text-slate-400 font-medium">Direção</p>
+                    </div>
+                </div>
+
+                <!-- Análise de Padrões por Categoria -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Padrões por Categoria/Torneio</h3>
+                    <div id="patterns-categoria" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="text-center text-slate-500">Analisando padrões...</div>
+                    </div>
+                </div>
+
+                <!-- Indicadores de Bônus -->
+                <div class="glass-card rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold mb-6">Utilização de Bônus</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div>
+                            <p class="text-sm text-slate-400">Apostas com Bônus</p>
+                            <p class="text-2xl font-bold text-blue-400" id="bonus-count">0</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">ROI com Bônus</p>
+                            <p class="text-2xl font-bold text-green-400" id="bonus-roi">0%</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">Taxa Acerto c/ Bônus</p>
+                            <p class="text-2xl font-bold text-purple-400" id="bonus-winrate">0%</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-400">Lucro de Bônus</p>
+                            <p class="text-2xl font-bold text-yellow-400" id="bonus-profit">R$ 0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript para Tooltips -->
+    <script>
+    // Sistema de Tooltips que funciona fora dos cards
+    document.addEventListener('DOMContentLoaded', function() {
+        // Criar container para portais de tooltip
+        const portalContainer = document.createElement('div');
+        portalContainer.id = 'tooltip-portal-container';
+        document.body.appendChild(portalContainer);
+        
+        // Processar todos os tooltips
+        const tooltips = document.querySelectorAll('.tooltip');
+        
+        tooltips.forEach(tooltip => {
+            const data = tooltip.getAttribute('data-tooltip');
+            if (!data) return;
+            
+            const [title, content] = data.split('|');
+            const icon = tooltip.querySelector('.info-icon');
+            
+            // Criar portal para este tooltip
+            const portal = document.createElement('div');
+            portal.className = 'tooltip-portal';
+            portal.innerHTML = `
+                <div class="tooltip-content">
+                    <strong>${title}</strong><br>
+                    ${content}
+                </div>
+            `;
+            portalContainer.appendChild(portal);
+            
+            let hideTimeout;
+            
+            // Mostrar tooltip
+            const showTooltip = () => {
+                clearTimeout(hideTimeout);
+                const rect = icon.getBoundingClientRect();
+                const tooltipContent = portal.querySelector('.tooltip-content');
+                
+                // Calcular posição
+                const tooltipWidth = 280;
+                const tooltipHeight = tooltipContent.offsetHeight || 80;
+                
+                let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+                let top = rect.top - tooltipHeight - 15;
+                
+                // Ajustar se sair da tela
+                if (left < 10) left = 10;
+                if (left + tooltipWidth > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipWidth - 10;
+                }
+                
+                if (top < 10) {
+                    // Mostrar abaixo se não couber em cima
+                    top = rect.bottom + 15;
+                }
+                
+                portal.style.left = left + 'px';
+                portal.style.top = top + 'px';
+                portal.classList.add('show');
+            };
+            
+            // Esconder tooltip
+            const hideTooltip = () => {
+                hideTimeout = setTimeout(() => {
+                    portal.classList.remove('show');
+                }, 100);
+            };
+            
+            // Eventos
+            icon.addEventListener('mouseenter', showTooltip);
+            icon.addEventListener('mouseleave', hideTooltip);
+            
+            // Para mobile
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (portal.classList.contains('show')) {
+                    portal.classList.remove('show');
+                } else {
+                    // Esconder outros tooltips
+                    document.querySelectorAll('.tooltip-portal').forEach(p => {
+                        p.classList.remove('show');
+                    });
+                    showTooltip();
+                }
+            });
+        });
+        
+        // Esconder tooltips ao clicar fora ou fazer scroll
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.tooltip-portal').forEach(p => {
+                p.classList.remove('show');
+            });
+        });
+        
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            document.querySelectorAll('.tooltip-portal').forEach(p => {
+                p.classList.remove('show');
+            });
+        }, true);
+    });
+    </script>
+
+    <!-- JavaScript Principal -->
+    <script src="analises.js"></script>
+</body>
+</html>

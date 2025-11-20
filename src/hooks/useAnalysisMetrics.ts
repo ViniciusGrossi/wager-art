@@ -79,28 +79,28 @@ export interface TemporalMetrics {
 export function useDashboardMetrics(apostas: Aposta[]): DashboardMetrics {
   return useMemo(() => {
     const totalInvestido = apostas.reduce((sum, a) => sum + (a.valor_apostado || 0), 0);
-    
+
     // Variação do período anterior
     const hoje = dayjs();
-    const diasPeriodo = apostas.length > 0 
-      ? hoje.diff(dayjs(apostas[apostas.length - 1]?.data), 'days') 
+    const diasPeriodo = apostas.length > 0
+      ? hoje.diff(dayjs(apostas[apostas.length - 1]?.data), 'days')
       : 30;
     const dataInicioPeriodoAnterior = hoje.subtract(diasPeriodo * 2, 'days');
     const dataFimPeriodoAnterior = hoje.subtract(diasPeriodo, 'days');
-    
-    const apostasAnterior = apostas.filter(a => 
-      dayjs(a.data).isAfter(dataInicioPeriodoAnterior) && 
+
+    const apostasAnterior = apostas.filter(a =>
+      dayjs(a.data).isAfter(dataInicioPeriodoAnterior) &&
       dayjs(a.data).isBefore(dataFimPeriodoAnterior)
     );
     const totalInvestidoAnterior = apostasAnterior.reduce((sum, a) => sum + (a.valor_apostado || 0), 0);
-    const totalInvestidoVariacao = totalInvestidoAnterior > 0 
-      ? ((totalInvestido - totalInvestidoAnterior) / totalInvestidoAnterior) * 100 
+    const totalInvestidoVariacao = totalInvestidoAnterior > 0
+      ? ((totalInvestido - totalInvestidoAnterior) / totalInvestidoAnterior) * 100
       : 0;
 
-    const apostasResolvidas = apostas.filter(a => 
+    const apostasResolvidas = apostas.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
-    
+
     const lucroTotal = apostasResolvidas.reduce((sum, a) => sum + (a.valor_final || 0), 0);
     const roi = totalInvestido > 0 ? (lucroTotal / totalInvestido) * 100 : 0;
     const roiStatus = roi >= 5 ? 'Excelente' : roi >= 0 ? 'Positivo' : 'Negativo';
@@ -115,8 +115,8 @@ export function useDashboardMetrics(apostas: Aposta[]): DashboardMetrics {
     });
 
     const apostasGanhas = apostasResolvidas.filter(a => a.resultado === 'Ganhou');
-    const taxaAcerto = apostasResolvidas.length > 0 
-      ? (apostasGanhas.length / apostasResolvidas.length) * 100 
+    const taxaAcerto = apostasResolvidas.length > 0
+      ? (apostasGanhas.length / apostasResolvidas.length) * 100
       : 0;
     const taxaStatus = taxaAcerto >= 60 ? 'Excelente' : taxaAcerto >= 50 ? 'Bom' : 'Abaixo';
 
@@ -127,8 +127,8 @@ export function useDashboardMetrics(apostas: Aposta[]): DashboardMetrics {
 
     // Odds
     const oddsValidas = apostas.map(a => a.odd).filter((o): o is number => o != null && o > 0);
-    const oddMedia = oddsValidas.length > 0 
-      ? oddsValidas.reduce((sum, o) => sum + o, 0) / oddsValidas.length 
+    const oddMedia = oddsValidas.length > 0
+      ? oddsValidas.reduce((sum, o) => sum + o, 0) / oddsValidas.length
       : 0;
     const oddMaisAlta = oddsValidas.length > 0 ? Math.max(...oddsValidas) : 0;
     const oddMaisBaixa = oddsValidas.length > 0 ? Math.min(...oddsValidas) : 0;
@@ -140,7 +140,7 @@ export function useDashboardMetrics(apostas: Aposta[]): DashboardMetrics {
     let tempVitorias = 0;
     let tempDerrotas = 0;
 
-    const apostasOrdenadas = [...apostasResolvidas].sort((a, b) => 
+    const apostasOrdenadas = [...apostasResolvidas].sort((a, b) =>
       dayjs(a.data).diff(dayjs(b.data))
     );
 
@@ -182,7 +182,7 @@ export function useDashboardMetrics(apostas: Aposta[]): DashboardMetrics {
 
 export function usePerformanceMetrics(apostas: Aposta[]): PerformanceMetrics {
   return useMemo(() => {
-    const apostasResolvidas = apostas.filter(a => 
+    const apostasResolvidas = apostas.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
 
@@ -206,8 +206,8 @@ export function usePerformanceMetrics(apostas: Aposta[]): PerformanceMetrics {
     }));
 
     const mesesLucrativos = mesesData.filter(m => m.lucro > 0);
-    const consistenciaROI = mesesData.length > 0 
-      ? (mesesLucrativos.length / mesesData.length) * 100 
+    const consistenciaROI = mesesData.length > 0
+      ? (mesesLucrativos.length / mesesData.length) * 100
       : 0;
 
     const melhorMes = mesesData.length > 0
@@ -219,8 +219,8 @@ export function usePerformanceMetrics(apostas: Aposta[]): PerformanceMetrics {
       : { mes: '—', roi: 0 };
 
     const mesAtual = dayjs().format('YYYY-MM');
-    const roiMesAtual = porMes[mesAtual] 
-      ? (porMes[mesAtual].lucro / porMes[mesAtual].investido) * 100 
+    const roiMesAtual = porMes[mesAtual]
+      ? (porMes[mesAtual].lucro / porMes[mesAtual].investido) * 100
       : 0;
 
     // Strike rate odds altas
@@ -273,8 +273,8 @@ export function usePerformanceMetrics(apostas: Aposta[]): PerformanceMetrics {
       return investido > 0 ? ((a.valor_final || 0) / investido) * 100 : 0;
     });
 
-    const retornoMedio = retornos.length > 0 
-      ? retornos.reduce((sum, r) => sum + r, 0) / retornos.length 
+    const retornoMedio = retornos.length > 0
+      ? retornos.reduce((sum, r) => sum + r, 0) / retornos.length
       : 0;
 
     const variancia = retornos.length > 0
@@ -287,9 +287,9 @@ export function usePerformanceMetrics(apostas: Aposta[]): PerformanceMetrics {
     const retornosNegativos = retornos.filter(r => r < 0);
     const desvioNegativo = retornosNegativos.length > 0
       ? Math.sqrt(
-          retornosNegativos.reduce((sum, r) => sum + Math.pow(r - retornoMedio, 2), 0) / 
-          retornosNegativos.length
-        )
+        retornosNegativos.reduce((sum, r) => sum + Math.pow(r - retornoMedio, 2), 0) /
+        retornosNegativos.length
+      )
       : 0;
     const sortinoRatio = desvioNegativo > 0 ? retornoMedio / desvioNegativo : 0;
 
@@ -334,12 +334,12 @@ export function usePerformanceMetrics(apostas: Aposta[]): PerformanceMetrics {
 
 export function useRiskMetrics(apostas: Aposta[]): RiskMetrics {
   return useMemo(() => {
-    const apostasResolvidas = apostas.filter(a => 
+    const apostasResolvidas = apostas.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
 
     // Drawdown
-    const apostasOrdenadas = [...apostasResolvidas].sort((a, b) => 
+    const apostasOrdenadas = [...apostasResolvidas].sort((a, b) =>
       dayjs(a.data).diff(dayjs(b.data))
     );
 
@@ -362,8 +362,8 @@ export function useRiskMetrics(apostas: Aposta[]): RiskMetrics {
       return investido > 0 ? ((a.valor_final || 0) / investido) * 100 : 0;
     });
 
-    const retornoMedio = retornos.length > 0 
-      ? retornos.reduce((sum, r) => sum + r, 0) / retornos.length 
+    const retornoMedio = retornos.length > 0
+      ? retornos.reduce((sum, r) => sum + r, 0) / retornos.length
       : 0;
 
     const variancia = retornos.length > 0
@@ -375,7 +375,7 @@ export function useRiskMetrics(apostas: Aposta[]): RiskMetrics {
     const taxaAcerto = apostasResolvidas.length > 0
       ? (apostasResolvidas.filter(a => a.resultado === 'Ganhou').length / apostasResolvidas.length) * 100
       : 0;
-    const scoreRisco = Math.min(100, 
+    const scoreRisco = Math.min(100,
       (maxDrawdown * 0.4) + (volatilidade * 0.4) + ((100 - taxaAcerto) * 0.2)
     );
 
@@ -440,7 +440,7 @@ export function useRiskMetrics(apostas: Aposta[]): RiskMetrics {
 
 export function useOddsMetrics(apostas: Aposta[]): OddsMetrics {
   return useMemo(() => {
-    const apostasResolvidas = apostas.filter(a => 
+    const apostasResolvidas = apostas.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
 
@@ -454,8 +454,8 @@ export function useOddsMetrics(apostas: Aposta[]): OddsMetrics {
       }
       return false;
     }).length;
-    const valueBets = apostasResolvidas.length > 0 
-      ? (valueBetsCount / apostasResolvidas.length) * 100 
+    const valueBets = apostasResolvidas.length > 0
+      ? (valueBetsCount / apostasResolvidas.length) * 100
       : 0;
 
     // Odds baixas e altas
@@ -526,7 +526,7 @@ export function useOddsMetrics(apostas: Aposta[]): OddsMetrics {
 
 export function useTemporalMetrics(apostas: Aposta[]): TemporalMetrics {
   return useMemo(() => {
-    const apostasResolvidas = apostas.filter(a => 
+    const apostasResolvidas = apostas.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
 
@@ -539,10 +539,10 @@ export function useTemporalMetrics(apostas: Aposta[]): TemporalMetrics {
     }, {} as Record<string, { lucro: number }>);
 
     const melhorDia = Object.keys(porDia).length > 0
-      ? Object.entries(porDia).reduce((max, [dia, data]) => 
-          data.lucro > max.lucro ? { dia, lucro: data.lucro } : max,
-          { dia: '—', lucro: 0 }
-        )
+      ? Object.entries(porDia).reduce((max, [dia, data]) =>
+        data.lucro > max.lucro ? { dia, lucro: data.lucro } : max,
+        { dia: '—', lucro: 0 }
+      )
       : { dia: '—', lucro: 0 };
 
     // Melhor horário (não disponível sem dataHoraAposta)
@@ -572,7 +572,7 @@ export function useTemporalMetrics(apostas: Aposta[]): TemporalMetrics {
     const datasOrdenadas = [...new Set(apostas.map(a => a.data).filter(Boolean))]
       .sort()
       .reverse();
-    
+
     let diasConsecutivos = 0;
     for (let i = 0; i < datasOrdenadas.length - 1; i++) {
       const diff = dayjs(datasOrdenadas[i]).diff(dayjs(datasOrdenadas[i + 1]), 'days');
@@ -614,7 +614,7 @@ export function useTemporalMetrics(apostas: Aposta[]): TemporalMetrics {
 
 export function usePatternsMetrics(apostas: Aposta[]) {
   return useMemo(() => {
-    const apostasResolvidas = apostas.filter(a => 
+    const apostasResolvidas = apostas.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
 
@@ -630,19 +630,19 @@ export function usePatternsMetrics(apostas: Aposta[]) {
     const taxasMensais = Object.values(porMes).map(m => (m.ganhou / m.total) * 100);
     const consistencia = taxasMensais.length > 0
       ? 100 - (taxasMensais.reduce((sum, t, _, arr) => {
-          const media = arr.reduce((s, v) => s + v, 0) / arr.length;
-          return sum + Math.pow(t - media, 2);
-        }, 0) / taxasMensais.length)
+        const media = arr.reduce((s, v) => s + v, 0) / arr.length;
+        return sum + Math.pow(t - media, 2);
+      }, 0) / taxasMensais.length)
       : 0;
 
     // Momentum: comparar últimas 10 apostas vs anteriores
     const ultimas10 = apostasResolvidas.slice(-10);
     const anteriores = apostasResolvidas.slice(-20, -10);
-    
+
     const taxaUltimas = ultimas10.length > 0
       ? (ultimas10.filter(a => a.resultado === 'Ganhou').length / ultimas10.length) * 100
       : 0;
-    
+
     const taxaAnteriores = anteriores.length > 0
       ? (anteriores.filter(a => a.resultado === 'Ganhou').length / anteriores.length) * 100
       : 0;
@@ -674,12 +674,12 @@ export function usePatternsMetrics(apostas: Aposta[]) {
     if (apostasResolvidas.length >= 20) {
       const ultimas = apostasResolvidas.slice(-10);
       const anterioresT = apostasResolvidas.slice(-20, -10);
-      
+
       const roiUltimas = ultimas.reduce((sum, a) => {
         const inv = a.valor_apostado || 0;
         return sum + (inv > 0 ? ((a.valor_final || 0) / inv) * 100 : 0);
       }, 0) / ultimas.length;
-      
+
       const roiAnteriores = anterioresT.reduce((sum, a) => {
         const inv = a.valor_apostado || 0;
         return sum + (inv > 0 ? ((a.valor_final || 0) / inv) * 100 : 0);
@@ -716,10 +716,10 @@ export function usePatternsMetrics(apostas: Aposta[]) {
 
     // Análise de bônus
     const apostasBonus = apostas.filter(a => a.bonus || a.turbo);
-    const apostasResolvidasBonus = apostasBonus.filter(a => 
+    const apostasResolvidasBonus = apostasBonus.filter(a =>
       a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado)
     );
-    
+
     const bonusMetrics = {
       total: apostasBonus.length,
       taxaAcerto: apostasResolvidasBonus.length > 0
@@ -753,7 +753,15 @@ export function usePatternsMetrics(apostas: Aposta[]) {
   }, [apostas]);
 }
 
-export function useExposureMetrics(apostas: Aposta[]) {
+export interface ExposureMetrics {
+  hhiCasa: number;
+  hhiCategoria: number;
+  participacaoCasa: { casa: string; stake: number; share: number }[];
+  participacaoCategoria: { categoria: string; stake: number; share: number }[];
+  stakeReturnCorrelation: number;
+}
+
+export function useExposureMetrics(apostas: Aposta[]): ExposureMetrics {
   return useMemo(() => {
     const resolvidas = apostas.filter(a => a.resultado && ['Ganhou', 'Perdeu', 'Cancelado', 'Cashout'].includes(a.resultado));
     const totalStake = resolvidas.reduce((s, a) => s + (a.valor_apostado || 0), 0);
