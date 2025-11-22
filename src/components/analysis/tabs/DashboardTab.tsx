@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { CHART_COLORS } from "@/lib/constants";
 import type { DashboardMetrics } from "@/hooks/useAnalysisMetrics";
+import { AIInsights } from "@/components/analysis/AIInsights";
+
 
 interface DashboardTabProps {
     metrics: DashboardMetrics;
@@ -271,7 +273,7 @@ export function DashboardTab({
                 </Card>
             </div>
 
-            {/* Insights */}
+            {/* AI-Generated Insights */}
             <Card className="overflow-hidden border-0 bg-gradient-to-br from-primary/5 via-background to-background">
                 <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-2xl">
@@ -281,77 +283,11 @@ export function DashboardTab({
                         Insights Inteligentes
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Análises automáticas baseadas no seu desempenho
+                        Análises automáticas geradas por IA baseadas no seu desempenho
                     </p>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {metrics.roi >= 5 && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.1 }}
-                            >
-                                <Card className="border-2 border-success/20 bg-success/5 hover:shadow-lg hover:border-success/40 transition-all duration-300 cursor-pointer group">
-                                    <CardContent className="p-5">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-2 rounded-lg bg-success/20 group-hover:scale-110 transition-transform">
-                                                <TrendingUp className="h-5 w-5 text-success" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-success mb-1 flex items-center gap-2">
-                                                    Excelente Performance!
-                                                    <span className="text-xl">🚀</span>
-                                                </h4>
-                                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                                    Seu ROI de <span className="font-bold text-success">{formatPercentage(metrics.roi)}</span> está muito acima da média do mercado.
-                                                </p>
-                                                <div className="mt-3 pt-3 border-t border-success/20">
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                        <Medal className="w-3 h-3" />
-                                                        Continue assim para maximizar seus lucros
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        )}
-
-                        {metrics.taxaAcerto >= 60 && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.2 }}
-                            >
-                                <Card className="border-2 border-primary/20 bg-primary/5 hover:shadow-lg hover:border-primary/40 transition-all duration-300 cursor-pointer group">
-                                    <CardContent className="p-5">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-2 rounded-lg bg-primary/20 group-hover:scale-110 transition-transform">
-                                                <Target className="h-5 w-5 text-primary" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="font-semibold text-primary mb-1 flex items-center gap-2">
-                                                    Alta Precisão!
-                                                    <span className="text-xl">🎯</span>
-                                                </h4>
-                                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                                    Taxa de acerto de <span className="font-bold text-primary">{formatPercentage(metrics.taxaAcerto)}</span> demonstra excelente análise.
-                                                </p>
-                                                <div className="mt-3 pt-3 border-t border-primary/20">
-                                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                                        <Zap className="w-3 h-3" />
-                                                        Você está escolhendo muito bem suas apostas
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        )}
-                    </div>
+                    <AIInsights />
                 </CardContent>
             </Card>
         </div>
