@@ -114,6 +114,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
   const [bookies, setBookies] = useState<Bookie[]>([]);
   const [selectedBookie, setSelectedBookie] = useState<Bookie | null>(null);
   const [categorySearch, setCategorySearch] = useState("");
+  const [tournamentSearch, setTournamentSearch] = useState("");
+  const [bookieSearch, setBookieSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasBonus, setHasBonus] = useState(false);
   const [selectedTurbo, setSelectedTurbo] = useState(0);
@@ -220,6 +222,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
       setHasBonus(false);
       setSelectedTurbo(0);
       setCategorySearch("");
+      setTournamentSearch("");
+      setBookieSearch("");
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -484,6 +488,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                         <div className="p-3 border-b flex-shrink-0 bg-popover">
                           <Input
                             placeholder="Buscar casa de apostas..."
+                            value={bookieSearch}
+                            onChange={(e) => setBookieSearch(e.target.value)}
                             className="h-9"
                           />
                         </div>
@@ -500,39 +506,44 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                             e.stopPropagation();
                           }}
                         >
-                          {bookies.length === 0 ? (
-                            <div className="py-6 text-center text-sm text-muted-foreground">
-                              Nenhuma casa encontrada.
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              {bookies.map((bookie) => (
-                                <div
-                                  key={bookie.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    field.onChange(bookie.name);
-                                    setSelectedBookie(bookie);
-                                    setBookieOpen(false);
-                                  }}
-                                  className="flex items-center gap-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
-                                >
-                                  <Check
-                                    className={cn(
-                                      "h-4 w-4",
-                                      field.value === bookie.name ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  <div className="flex items-center justify-between flex-1">
-                                    <span className="text-sm">{bookie.name}</span>
-                                    <span className="text-xs text-muted-foreground ml-4">
-                                      {formatCurrency(bookie.balance || 0)}
-                                    </span>
+                          {(() => {
+                            const filteredBookies = bookies.filter((bookie) =>
+                              bookie.name.toLowerCase().includes(bookieSearch.toLowerCase())
+                            );
+                            return filteredBookies.length === 0 ? (
+                              <div className="py-6 text-center text-sm text-muted-foreground">
+                                Nenhuma casa encontrada.
+                              </div>
+                            ) : (
+                              <div className="space-y-1">
+                                {filteredBookies.map((bookie) => (
+                                  <div
+                                    key={bookie.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      field.onChange(bookie.name);
+                                      setSelectedBookie(bookie);
+                                      setBookieOpen(false);
+                                    }}
+                                    className="flex items-center gap-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "h-4 w-4",
+                                        field.value === bookie.name ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex items-center justify-between flex-1">
+                                      <span className="text-sm">{bookie.name}</span>
+                                      <span className="text-xs text-muted-foreground ml-4">
+                                        {formatCurrency(bookie.balance || 0)}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </PopoverContent>
@@ -703,6 +714,8 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                           <div className="p-3 border-b flex-shrink-0 bg-popover">
                             <Input
                               placeholder="Buscar torneio..."
+                              value={tournamentSearch}
+                              onChange={(e) => setTournamentSearch(e.target.value)}
                               className="h-9"
                             />
                           </div>
@@ -719,33 +732,38 @@ export function CreateApostaDialog({ open, onOpenChange, onSuccess }: CreateApos
                               e.stopPropagation();
                             }}
                           >
-                            {torneios.length === 0 ? (
-                              <div className="py-6 text-center text-sm text-muted-foreground">
-                                Nenhum torneio encontrado.
-                              </div>
-                            ) : (
-                              <div className="space-y-1">
-                                {torneios.map((torneio) => (
-                                  <div
-                                    key={torneio}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      field.onChange(torneio);
-                                      setTournamentOpen(false);
-                                    }}
-                                    className="flex items-center gap-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "h-4 w-4",
-                                        field.value === torneio ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <span className="text-sm">{torneio}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                            {(() => {
+                              const filteredTournaments = torneios.filter((torneio) =>
+                                torneio.toLowerCase().includes(tournamentSearch.toLowerCase())
+                              );
+                              return filteredTournaments.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  Nenhum torneio encontrado.
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  {filteredTournaments.map((torneio) => (
+                                    <div
+                                      key={torneio}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        field.onChange(torneio);
+                                        setTournamentOpen(false);
+                                      }}
+                                      className="flex items-center gap-2 p-2 rounded-sm hover:bg-accent cursor-pointer select-none"
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "h-4 w-4",
+                                          field.value === torneio ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <span className="text-sm">{torneio}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       </PopoverContent>
