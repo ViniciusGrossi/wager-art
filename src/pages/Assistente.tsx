@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Sparkles, TrendingUp, Target, AlertCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  Bot, Send, Sparkles, TrendingUp, Target, AlertCircle,
+  Copy, Check, Trash2, BarChart3, Brain, Lightbulb,
+  TrendingDown, DollarSign, Activity
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Message {
   id: string;
@@ -19,19 +27,57 @@ export default function Assistente() {
     {
       id: "1",
       role: "assistant",
-      content: "Olá! Sou seu assistente de apostas inteligente. Tenho acesso a todo o seu histórico e posso te ajudar com estratégias, análises e dicas personalizadas. Como posso ajudá-lo hoje?",
+      content: "👋 **Olá! Sou seu Assistente de Apostas Inteligente.**\n\nTenho acesso completo ao seu histórico de apostas e posso ajudá-lo com:\n- 📊 Análises detalhadas de performance\n- 🎯 Identificação de padrões e tendências\n- 💡 Estratégias personalizadas\n- 📈 Insights baseados em dados reais\n\nComo posso ajudá-lo hoje?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const suggestions = [
-    { icon: TrendingUp, text: "Qual minha melhor categoria?" },
-    { icon: Target, text: "Calcule meu ROI mensal" },
-    { icon: AlertCircle, text: "Identifique padrões de perda" },
-    { icon: Sparkles, text: "Sugira estratégias de melhoria" },
+  const suggestionCategories = [
+    {
+      name: "Análise",
+      icon: BarChart3,
+      suggestions: [
+        { icon: TrendingUp, text: "Qual minha melhor categoria?" },
+        { icon: DollarSign, text: "Calcule meu ROI mensal" },
+        { icon: Activity, text: "Analise minha performance recente" },
+        { icon: Target, text: "Quais são meus melhores horários?" },
+      ]
+    },
+    {
+      name: "Estratégia",
+      icon: Brain,
+      suggestions: [
+        { icon: Lightbulb, text: "Sugira estratégias de melhoria" },
+        { icon: AlertCircle, text: "Identifique padrões de perda" },
+        { icon: Sparkles, text: "Dicas para aumentar lucro" },
+        { icon: TrendingDown, text: "Como reduzir perdas?" },
+      ]
+    },
+    {
+      name: "Performance",
+      icon: TrendingUp,
+      suggestions: [
+        { icon: Target, text: "Compare categorias de apostas" },
+        { icon: BarChart3, text: "Estatísticas das últimas 30 apostas" },
+        { icon: DollarSign, text: "Qual meu melhor valor de aposta?" },
+        { icon: Activity, text: "Análise de bancas" },
+      ]
+    }
   ];
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -66,7 +112,7 @@ export default function Assistente() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Ocorreu um erro ao processar sua solicitação. Verifique se a chave da API está configurada.",
+        content: "⚠️ **Erro ao processar solicitação**\n\nOcorreu um problema ao processar sua mensagem. Verifique se:\n- A chave da API está configurada corretamente\n- Sua conexão está estável\n\nTente novamente em alguns instantes.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -79,117 +125,219 @@ export default function Assistente() {
     setInput(text);
   };
 
+  const handleCopy = async (content: string, id: string) => {
+    await navigator.clipboard.writeText(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleClearChat = () => {
+    setMessages([messages[0]]); // Keep only the initial message
+  };
+
   return (
-    <div className="container mx-auto p-6 max-w-4xl h-[calc(100vh-120px)] flex flex-col">
+    <div className="container mx-auto p-6 max-w-5xl h-[calc(100vh-120px)] flex flex-col">
+      {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
-            <Bot className="h-6 w-6 text-primary" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+              <Bot className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Assistente IA</h1>
+              <p className="text-muted-foreground">Seu consultor pessoal de apostas inteligente</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Assistente IA</h1>
-            <p className="text-muted-foreground">Seu consultor pessoal de apostas inteligente</p>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="gap-1">
+              <Activity className="h-3 w-3" />
+              {messages.length - 1} mensagens
+            </Badge>
+            {messages.length > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearChat}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Limpar
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Suggestions (only show when chat is empty) */}
       {messages.length === 1 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-          {suggestions.map((suggestion, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card
-                className="p-4 hover:bg-accent cursor-pointer transition-colors border-border/50"
-                onClick={() => handleSuggestion(suggestion.text)}
-              >
-                <div className="flex items-center gap-3">
-                  <suggestion.icon className="h-5 w-5 text-primary" />
-                  <span className="text-sm">{suggestion.text}</span>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <Tabs defaultValue="Análise" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              {suggestionCategories.map((category) => (
+                <TabsTrigger key={category.name} value={category.name} className="gap-2">
+                  <category.icon className="h-4 w-4" />
+                  {category.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {suggestionCategories.map((category) => (
+              <TabsContent key={category.name} value={category.name}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {category.suggestions.map((suggestion, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Card
+                        className="p-4 hover:bg-accent hover:border-primary/30 cursor-pointer transition-all duration-200 border-border/50 group"
+                        onClick={() => handleSuggestion(suggestion.text)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <suggestion.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="text-sm font-medium">{suggestion.text}</span>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
                 </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </motion.div>
       )}
 
-      <Card className="flex-1 flex flex-col overflow-hidden border-border/50">
+      {/* Chat Area */}
+      <Card className="flex-1 flex flex-col overflow-hidden border-border/50 shadow-lg">
         <ScrollArea className="flex-1 p-6">
           <div className="space-y-4">
-            {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl p-4 ${message.role === "user"
-                    ? "bg-primary text-primary-foreground ml-4"
-                    : "bg-muted mr-4"
-                    }`}
+            <AnimatePresence>
+              {messages.map((message, index) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {message.role === "assistant" && (
-                    <div className="flex items-center gap-2 mb-2">
-                      <Bot className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-medium text-primary">Assistente</span>
+                  <div
+                    className={`max-w-[85%] rounded-2xl p-4 ${message.role === "user"
+                        ? "bg-primary text-primary-foreground ml-4"
+                        : "bg-muted mr-4 relative group"
+                      }`}
+                  >
+                    {message.role === "assistant" && (
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/50">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-lg bg-primary/10">
+                            <Bot className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <span className="text-xs font-semibold text-primary">Wager Art AI</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleCopy(message.content, message.id)}
+                        >
+                          {copiedId === message.id ? (
+                            <Check className="h-3.5 w-3.5 text-green-500" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                    <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                      {message.role === "assistant" ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
                     </div>
-                  )}
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {message.content.split('\n').map((line, i) => (
-                      <p key={i} className="min-h-[1.2em]">
-                        {line.split(/(\*\*.*?\*\*)/).map((part, j) =>
-                          part.startsWith('**') && part.endsWith('**')
-                            ? <strong key={j}>{part.slice(2, -2)}</strong>
-                            : part
-                        )}
-                      </p>
-                    ))}
+                    <span className="text-xs opacity-70 mt-2 block">
+                      {message.timestamp.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
-                  <span className="text-xs opacity-70 mt-2 block">
-                    {message.timestamp.toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Typing Indicator */}
             {isLoading && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
                 className="flex justify-start"
               >
                 <div className="bg-muted rounded-2xl p-4 mr-4">
-                  <div className="flex items-center gap-2">
-                    <Bot className="h-4 w-4 text-primary animate-pulse" />
-                    <span className="text-sm">Pensando...</span>
+                  <div className="flex items-center gap-3">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                      <Bot className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="flex gap-1">
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-primary"
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                      />
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-primary"
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.1 }}
+                      />
+                      <motion.div
+                        className="w-2 h-2 rounded-full bg-primary"
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                      />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Pensando...</span>
                   </div>
                 </div>
               </motion.div>
             )}
+            <div ref={scrollRef} />
           </div>
         </ScrollArea>
 
+        {/* Input Area */}
         <div className="border-t border-border/50 p-4 bg-background">
           <div className="flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Digite sua pergunta..."
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+              placeholder="Digite sua pergunta... (Enter para enviar)"
               className="flex-1"
               disabled={isLoading}
             />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+            <Button
+              onClick={handleSend}
+              disabled={isLoading || !input.trim()}
+              size="icon"
+              className="h-10 w-10"
+            >
               <Send className="h-4 w-4" />
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            💡 Dica: Use Shift+Enter para quebrar linha
+          </p>
         </div>
       </Card>
     </div>

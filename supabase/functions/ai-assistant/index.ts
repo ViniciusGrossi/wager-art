@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import OpenAI from "https://esm.sh/openai@4.20.1";
 
 const corsHeaders = {
@@ -19,20 +19,41 @@ serve(async (req) => {
         // 1. Initialize Supabase Client
         const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
         const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+        // Get the authorization header from the request
+        const authHeader = req.headers.get('Authorization');
+
+        console.log("Auth Header present:", !!authHeader);
+        if (authHeader) {
+            console.log("Auth Header length:", authHeader.length);
+            // Log first few chars to verify it's a Bearer token (don't log full token)
+            console.log("Auth Header start:", authHeader.substring(0, 15) + "...");
+        } else {
+            throw new Error('No authorization header passed');
+        }
+
         const supabase = createClient(supabaseUrl, supabaseKey, {
             global: {
-                headers: { Authorization: req.headers.get("Authorization")! },
+                headers: { Authorization: authHeader },
             },
         });
 
         // 2. Get User
         const {
             data: { user },
+            error: userError,
         } = await supabase.auth.getUser();
 
-        if (!user) {
-            throw new Error("User not authenticated");
+        if (userError) {
+            console.error("Auth error details:", userError);
+            throw new Error(`Auth error: ${userError.message}`);
         }
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        console.log("User authenticated:", user.id);
 
         // 3. Fetch Betting Data (Context)
         // Fetch recent bets
@@ -43,7 +64,10 @@ serve(async (req) => {
             .order("data", { ascending: false })
             .limit(20);
 
-        if (betsError) throw betsError;
+        if (betsError) {
+            console.error("Error fetching bets:", betsError);
+            throw betsError;
+        }
 
         // Fetch bookies (for balance context)
         const { data: bookies, error: bookiesError } = await supabase
@@ -51,7 +75,10 @@ serve(async (req) => {
             .select("name, balance")
             .eq("user_id", user.id);
 
-        if (bookiesError) throw bookiesError;
+        if (bookiesError) {
+            console.error("Error fetching bookies:", bookiesError);
+            throw bookiesError;
+        }
 
         // Calculate basic KPIs from recent bets
         const totalBets = recentBets?.length || 0;
@@ -68,8 +95,14 @@ serve(async (req) => {
         });
 
         // 4. Initialize OpenAI
+        const apiKey = Deno.env.get("OPENAI_API_KEY");
+        if (!apiKey) {
+            console.error("OPENAI_API_KEY not found");
+            throw new Error("OpenAI API Key not configured");
+        }
+
         const openai = new OpenAI({
-            apiKey: Deno.env.get("OPENAI_API_KEY"),
+            apiKey: apiKey,
         });
 
         // 5. Construct System Prompt
@@ -120,7 +153,8 @@ serve(async (req) => {
         });
     } catch (error) {
         console.error("Error:", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        return new Response(JSON.stringify({ error: errorMessage }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

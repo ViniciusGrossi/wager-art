@@ -15,7 +15,12 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
       includeAssets: ["pwa-icon.png"],
+      devOptions: {
+        enabled: true,
+        type: "module",
+      },
       manifest: {
         name: "WagerArt - Gestão de Apostas",
         short_name: "WagerArt",
