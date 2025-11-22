@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Minus, RefreshCw, ArrowRightLeft, Gift, Settings, HelpCircle, Trash2 } from "lucide-react";
+import { Plus, Minus, RefreshCw, ArrowRightLeft, Gift, Settings, HelpCircle, Trash2, TrendingUp } from "lucide-react";
 import { transactionsService } from "@/services/transactions";
 import { bookiesService } from "@/services/bookies";
 import type { Bookie, TransactionType } from "@/types/betting";
@@ -63,6 +63,14 @@ const transactionTypes = [
     tooltip: 'Use quando receber bônus da casa de apostas (cashback, promoções, etc)',
     color: 'text-purple-600',
   },
+  {
+    value: 'outros_esportes' as TransactionType,
+    label: 'Outros Esportes',
+    icon: TrendingUp,
+    description: 'Ganhos em outros esportes',
+    tooltip: 'Use quando ganhar apostas em outros esportes (NBA, NFL, etc) e quiser adicionar o lucro sem registrar a aposta no sistema',
+    color: 'text-orange-600',
+  },
 ];
 
 export function TransactionDialog({ bookie, open, onOpenChange, onSuccess }: TransactionDialogProps) {
@@ -90,7 +98,7 @@ export function TransactionDialog({ bookie, open, onOpenChange, onSuccess }: Tra
       let newBalanceValue = bookie.balance || 0;
 
       // Calcula o novo saldo baseado no tipo
-      if (type === 'recarga' || type === 'bonus') {
+      if (type === 'recarga' || type === 'bonus' || type === 'outros_esportes') {
         newBalanceValue += value;
       } else if (type === 'saque' || type === 'transferencia') {
         newBalanceValue -= value;
@@ -204,7 +212,7 @@ export function TransactionDialog({ bookie, open, onOpenChange, onSuccess }: Tra
         {!showAdjust ? (
           <>
             <Tabs defaultValue="recarga" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 {transactionTypes.map((type) => {
                   const Icon = type.icon;
                   return (
